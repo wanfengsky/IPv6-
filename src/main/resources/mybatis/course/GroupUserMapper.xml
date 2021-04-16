@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yi.project.course.group.mapper.GroupUserMapper">
+    
+    <resultMap type="GroupUserVo" id="GroupUserResult">
+        <result property="groupUserId"    column="group_user_id"    />
+        <result property="groupId"    column="group_id"    />
+        <result property="userId"    column="user_id"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="createTime"    column="create_time"    />
+        <!-- 用户信息 -->
+        <result property="deptId"        column="dept_id"         />
+        <result property="deptName"      column="dept_name"         />
+        <result property="loginName"     column="login_name"      />
+        <result property="userName"      column="user_name"       />
+        <result property="userType"      column="user_type"       />
+        <result property="email"         column="email"           />
+        <result property="phonenumber"   column="phonenumber"     />
+        <result property="birthday"   	 column="birthday"        />
+        <result property="sex"           column="sex"             />
+        <result property="status"        column="status"          />
+    </resultMap>
+
+    <sql id="selectGroupUserCol">
+        SELECT
+            u.user_id AS user_id, u.login_name, u.user_name, u.user_type, u.email, u.phonenumber, u.birthday, u.sex, u.status,
+            gu.group_user_id, gu.group_id, gu.create_by, gu.create_time,
+            d.dept_id, d.dept_name
+        FROM sys_user u
+            LEFT JOIN sys_dept d ON u.dept_id = d.dept_id
+            LEFT JOIN sku_group_user gu ON gu.user_id = u.user_id
+    </sql>
+
+    <select id="selectGroupUserList" parameterType="GroupUserQuery" resultMap="GroupUserResult">
+        SELECT
+            u.user_id AS user_id, u.login_name, u.user_name, u.user_type, u.email, u.phonenumber, u.birthday, u.sex, u.status,
+            <if test="!notIn">
+                gu.group_user_id, gu.group_id, gu.create_by, gu.create_time,
+            </if>
+            d.dept_id, d.dept_name
+        FROM sys_user u
+            LEFT JOIN sys_dept d ON u.dept_id = d.dept_id
+            INNER JOIN sys_user_role ur ON u.user_id = ur.user_id AND ur.role_id = 101 <!-- 用户角色为学生 -->
+        <if test="!notIn">
+            INNER JOIN sku_group_user gu ON gu.user_id = u.user_id AND gu.group_id = #{groupId}
+        </if>
+        <where>
+            <if test="notIn">
+                AND u.user_id not in (
+                    SELECT gu.user_id FROM sku_group_user gu WHERE gu.group_id = #{groupId}
+                )
+            </if>
+            <if test="notIn and deptId != null">
+                AND d.dept_id = #{deptId}
+            </if>
+            <if test="userId != null "> AND u.user_id = #{userId}</if>
+            <if test="userName != null  and userName != ''"> AND u.user_name LIKE concat('%', #{userName}, '%')</if>
+            <if test="loginName != null  and loginName != ''"> AND u.login_name LIKE concat('%', #{loginName}, '%')</if>
+            <if test="createBy != null "> AND gu.create_by = #{createBy}</if>
+            <if test="params.beginCreateTime != null and params.beginCreateTime != '' and params.endCreateTime != null and params.endCreateTime != ''"> and create_time between #{params.beginCreateTime} and #{params.endCreateTime}</if>
+        </where>
+        ORDER BY u.user_id
+    </select>
+    
+    <select id="selectGroupUserById" parameterType="long" resultMap="GroupUserResult">
+        <include refid="selectGroupUserCol"/>
+        WHERE gu.group_user_id = #{groupUserId}
+    </select>
+
+    <insert id="insertGroupUsers" parameterType="GroupUserQuery">
+        INSERT INTO sku_group_user
+            (group_id, user_id, create_by, create_time)
+        VALUES
+        <foreach item="gu" collection="list" separator=",">
+           (#{gu.groupId}, #{gu.userId}, #{gu.createBy}, #{gu.createTime})
+        </foreach>
+    </insert>
+
+    <delete id="deleteGroupUserByIds" parameterType="string">
+        delete from sku_group_user where group_user_id in 
+        <foreach item="groupUserId" collection="array" open="(" separator="," close=")">
+            #{groupUserId}
+        </foreach>
+    </delete>
+
+    <select id="countUsersByGroupId" parameterType="long" resultType="int">
+        SELECT count(1) FROM sku_group_user
+        WHERE group_id = #{groupId}
+    </select>
+
+    <select id="selectGroupsByUserId" parameterType="long" resultType="long">
+        SELECT distinct group_id FROM sku_group_user
+        WHERE user_id = #{userID}
+    </select>
+</mapper>

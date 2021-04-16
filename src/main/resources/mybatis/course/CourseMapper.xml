@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yi.project.course.course.mapper.CourseMapper">
+    
+    <resultMap type="Course" id="CourseResult">
+        <result property="courseId"    column="course_id"    />
+        <result property="courseName"    column="course_name"    />
+        <result property="courseType"    column="course_type"    />
+        <result property="courseInfo"    column="course_info"    />
+        <result property="courseImage"    column="course_image"    />
+        <result property="courseVideo"    column="course_video"    />
+        <result property="userId"    column="user_id"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="delFlag"    column="del_flag"    />
+        <result property="remark"    column="remark"    />
+    </resultMap>
+
+    <sql id="selectCourseVo">
+        select course_id, course_name, course_type, course_info, course_image, course_video, user_id, create_by, create_time, del_flag, remark from sku_course
+    </sql>
+
+    <select id="selectCourseList" parameterType="Course" resultMap="CourseResult">
+        <include refid="selectCourseVo"/>
+        <where>
+            <if test="studentId != null">
+                AND course_id IN (
+                    SELECT DISTINCT g.course_id
+                    FROM sku_course_group g INNER JOIN sku_group_user gu
+                    ON g.group_id = gu.group_id AND gu.user_id = #{studentId}
+                )
+            </if>
+            <if test="courseId != null "> and course_id = #{courseId}</if>
+            <if test="courseName != null  and courseName != ''"> and course_name like concat('%', #{courseName}, '%')</if>
+            <if test="courseType != null  and courseType != ''"> and course_type = #{courseType}</if>
+            <if test="delFlag != null  and delFlag != ''"> and del_flag = #{delFlag}</if>
+            <if test="userId != null "> and user_id = #{userId}</if>
+        </where>
+    </select>
+
+    <select id="selectCourseIdList" parameterType="Course" resultType="java.lang.Long">
+        select   course_id
+        from sku_course
+        <where>
+
+            <if test="courseName != null  and courseName != ''"> and course_name like concat('%', #{courseName}, '%')</if>
+            <if test="courseType != null  and courseType != ''"> and course_type = #{courseType}</if>
+            <if test="delFlag != null  and delFlag != ''"> and del_flag = #{delFlag}</if>
+            <if test="userId != null "> and user_id = #{userId}</if>
+        </where>
+    </select>
+    
+    <select id="selectCourseById" parameterType="Long" resultMap="CourseResult">
+        <include refid="selectCourseVo"/>
+        where course_id = #{courseId}
+    </select>
+    <select id="selectCourseIdByTeacherId" parameterType="Long" resultType="Long">
+        select course_id
+        from sku_course
+        where del_flag = '0' and user_id = #{userID}
+    </select>
+
+        
+    <insert id="insertCourse" parameterType="Course" useGeneratedKeys="true" keyProperty="courseId">
+        insert into sku_course
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="courseName != null and courseName != ''">course_name,</if>
+            <if test="courseType != null and courseType != ''">course_type,</if>
+            <if test="courseInfo != null and courseInfo != ''">course_info,</if>
+            <if test="courseImage != null and courseImage != ''">course_image,</if>
+            <if test="courseVideo != null">course_video,</if>
+            <if test="userId != null">user_id,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="delFlag != null and delFlag != ''">del_flag,</if>
+            <if test="remark != null">remark,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="courseName != null and courseName != ''">#{courseName},</if>
+            <if test="courseType != null and courseType != ''">#{courseType},</if>
+            <if test="courseInfo != null and courseInfo != ''">#{courseInfo},</if>
+            <if test="courseImage != null and courseImage != ''">#{courseImage},</if>
+            <if test="courseVideo != null">#{courseVideo},</if>
+            <if test="userId != null">#{userId},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="delFlag != null and delFlag != ''">#{delFlag},</if>
+            <if test="remark != null">#{remark},</if>
+         </trim>
+    </insert>
+
+    <update id="updateCourse" parameterType="Course">
+        update sku_course
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="courseName != null and courseName != ''">course_name = #{courseName},</if>
+            <if test="courseType != null and courseType != ''">course_type = #{courseType},</if>
+            <if test="courseInfo != null and courseInfo != ''">course_info = #{courseInfo},</if>
+            <if test="courseImage != null and courseImage != ''">course_image = #{courseImage},</if>
+            <if test="courseVideo != null">course_video = #{courseVideo},</if>
+            <if test="userId != null">user_id = #{userId},</if>
+            <if test="createBy != null">create_by = #{createBy},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="delFlag != null and delFlag != ''">del_flag = #{delFlag},</if>
+            <if test="remark != null">remark = #{remark},</if>
+        </trim>
+        where course_id = #{courseId}
+    </update>
+
+    <delete id="deleteCourseById" parameterType="long">
+        delete from sku_course where course_id = #{courseId}
+    </delete>
+
+    <delete id="deleteCourseByIds" parameterType="long">
+        delete from sku_course where course_id in 
+        <foreach item="courseId" collection="array" open="(" separator="," close=")">
+            #{courseId}
+        </foreach>
+    </delete>
+
+    <update id="deleteFlagByIds" parameterType="long">
+        update sku_course
+            SET del_flag = '2'
+        where course_id  in
+        <foreach item="course_id" collection="array" open="(" separator="," close=")">
+            #{course_id}
+        </foreach>
+    </update>
+
+</mapper>

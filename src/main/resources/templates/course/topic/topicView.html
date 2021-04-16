@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="zh" xmlns:th="http://www.thymeleaf.org" >
+<head>
+    <th:block th:include="include :: header('修改学生话题')" />
+    <th:block th:include="include :: summernote-css" />
+</head>
+<body class="white-bg">
+    <div class="wrapper wrapper-content animated fadeInRight ibox-content" style="margin: 0px 0px 0px 20px">
+        <div th:object="${topic}">
+            <h2>[[*{title}]]</h2>
+
+            <h3>所属课程 ： [[${topic.courseName}]]</h3>
+
+        </div>
+        <table class="table" style="margin-bottom: 0px">
+            <tr>
+                <td style="width: 100px" align="center">
+                    <img style="width: 50px" th:src="(${#strings.isEmpty(topic.avatar)}) ? @{/img/profile.jpg} : @{${topic.avatar}}" th:onerror="this.src='img/profile.jpg'" class="img-circle" alt="User Image">
+                    <p>
+                        <span class="badge badge-warning" th:text="${@dict.getLabel('sku_topic_user_type','1')}"></span>
+                    </p>
+                    <p>[[${topic.userName}]]</p>
+                </td>
+                <td>
+                    <div  th:utext="${topic.content}">
+                    </div>
+                    <p align="right"><span th:text="${#dates.format(topic.createTime,'yyyy-MM-dd HH:mm:ss')}"></span></p>
+
+                </td>
+            </tr>
+        </table>
+        <table class="table" id="replyTable">
+
+        </table>
+    </div>
+    <div style="margin: 0px 0px 0px 30px">
+        <form class="form-horizontal m" id="form-topic-add">
+            <span style="font-weight:bold">发表回复:</span>
+            <input name="topicPid" th:value="${topic.topicId}" type="hidden">
+            <div class="form-group" style="margin-top:10px">
+
+                <div class="col-sm-8" >
+                    <input type="hidden" class="form-control" name="content">
+                    <div class="summernote" id="content"></div>
+                </div>
+            </div>
+        </form>
+    </div>
+    <th:block th:include="include :: footer" />
+    <th:block th:include="include :: summernote-js" />
+    <script th:inline="javascript">
+        var topicUserTypeDatas = [[${@dict.getType('sku_topic_user_type')}]];
+        var prefix = ctx + "course/topic";
+        var topicId = [[${topicId}]];
+
+        $("#form-topic-add").validate({
+            focusCleanup: true
+        });
+
+        function submitHandler() {
+            if ($.validate.form()) {
+                $.operate.save(prefix + "/add", $('#form-topic-add').serialize());
+            }
+        }
+        function initSummernote() {
+            $('.summernote').each(function(i) {
+                $('#' + this.id).summernote({
+                    lang: 'zh-CN',
+                    callbacks: {
+                        onChange: function(contents, $edittable) {
+                            $("input[name='" + this.id + "']").val(contents);
+                        },
+                        onImageUpload: function(files) {
+                            var obj = this;
+                            var data = new FormData();
+                            data.append("file", files[0]);
+                            $.ajax({
+                                type: "post",
+                                url: ctx + "common/upload",
+                                data: data,
+                                cache: false,
+                                contentType: false,
+                                processData: false,
+                                dataType: 'json',
+                                success: function(result) {
+                                    if (result.code == web_status.SUCCESS) {
+                                        $('#' + obj.id).summernote('insertImage', result.url);
+                                    } else {
+                                        $.modal.alertError(result.msg);
+                                    }
+                                },
+                                error: function(error) {
+                                    $.modal.alertWarning("图片上传失败。");
+                                }
+                            });
+                        }
+                    }
+
+                });
+
+
+            });
+        }
+
+        function initReplyTable() {
+            $.ajax({
+                url:prefix+"/replyList?topicPid="+topicId,
+                type:"POST",
+                success:function (data){
+                    var htm = "";
+                    for(var i = 0;i<data.rows.length;i++) {
+                        htm += "<tr> <td style=\"width: 100px\" align=\"center\">";
+
+                        if(null == data.rows[i].avatar || "" ==  data.rows[i].avatar){
+                            htm += "<img style=\"width: 50px\" src=\"/img/profile.jpg\"";
+
+                        } else {
+                            htm += "<img style=\"width: 50px\" src=\""+data.rows[i].avatar+"\"";
+                        }
+
+                        htm += "class=\"img-circle\" alt=\"User Image\">";
+                        //htm += "<p><span className = \"badge badge-primary\" th:text = \"${@dict.getLabel('sku_topic_user_type','"+data.rows[i].userType+"')}\"></span></p>"
+                        if(data.rows[i].userType == "1"){
+                            htm += "<p><span class = \"badge badge-warning\" >题主</span></p>"
+                        } else if(data.rows[i].userType == "2") {
+                            htm += "<p><span class = \"badge badge-primary\" >教师</span></p>"
+                        } else {
+                            htm += "<p><span class = \"badge badge-success\" >学生</span></p>"
+                        }
+
+                        htm += "<p>"+data.rows[i].userName+"</p>";
+                        htm +=  "</td> <td><div>" +data.rows[i].content +"</div>";
+                        htm += "<p align=\"right\">"+data.rows[i].createTime+"</p>";
+                        htm += "</td></tr>";
+
+                    }
+                    $("#replyTable").html(htm);
+
+                }
+            });
+
+        }
+
+        $(function() {
+            initSummernote();
+            initReplyTable();
+        });
+    </script>
+</body>
+</html>

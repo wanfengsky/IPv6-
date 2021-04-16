@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="zh" xmlns:th="http://www.thymeleaf.org" xmlns:shiro="http://www.pollix.at/thymeleaf/shiro">
+<head>
+    <th:block th:include="include :: header('作业管理列表')" />
+</head>
+<body class="gray-bg">
+     <div class="container-div">
+        <div class="row">
+            <div class="col-sm-12 search-collapse">
+                <form id="formId">
+                    <div class="select-list">
+                        <ul>
+                            <li>
+                                <label>作业编号：</label>
+                                <input type="hidden" name="chapterId" id="chapterId" th:value="${chapterId}"/>
+                                <input type="hidden" name="courseId" id="courseId"  th:value="${courseId}"/>
+                                <input type="text" name="homeworkId"/>
+                            </li>
+                            <li>
+                                <label>作业名：</label>
+                                <input type="text" name="homeworkName"/>
+                            </li>
+                            <li>
+                                <label>班级：</label>
+                                <select name="groupId" th:with="type=${@group.groupsDict(courseId)}">
+                                    <option value="">所有</option>
+                                    <option th:each="g : ${group}" th:text="${g.groupName}" th:value="${g.groupId}"></option>
+                                </select>
+                            </li>
+                            <li class="select-time">
+                                <label>截止时间：</label>
+                                <input type="text" class="time-input" id="startTime" placeholder="开始时间" name="params[beginDeadline]"/>
+                                <span>-</span>
+                                <input type="text" class="time-input" id="endTime" placeholder="结束时间" name="params[endDeadline]"/>
+                            </li>
+                            <li>
+                                <label>发布标志：</label>
+                                <select name="publish" th:with="type=${@dict.getType('sys_yes_no')}">
+                                    <option value="">所有</option>
+                                    <option th:each="dict : ${type}" th:text="${dict.dictLabel}" th:value="${dict.dictValue}"></option>
+                                </select>
+                            </li>
+                            <li>
+                                <a class="btn btn-primary btn-rounded btn-sm" onclick="$.table.search()"><i class="fa fa-search"></i>&nbsp;搜索</a>
+                                <a class="btn btn-warning btn-rounded btn-sm" onclick="$.form.reset()"><i class="fa fa-refresh"></i>&nbsp;重置</a>
+                            </li>
+                        </ul>
+                    </div>
+                </form>
+            </div>
+
+            <div class="btn-group-sm" id="toolbar" role="group">
+                <a class="btn btn-success" onclick="$.operate.add()" shiro:hasPermission="course:homework:add">
+                    <i class="fa fa-plus"></i> 添加
+                </a>
+                <a class="btn btn-primary single disabled" onclick="$.operate.edit()" shiro:hasPermission="course:homework:edit">
+                    <i class="fa fa-edit"></i> 修改
+                </a>
+                <a class="btn btn-danger multiple disabled" onclick="$.operate.removeAll()" shiro:hasPermission="course:homework:remove">
+                    <i class="fa fa-remove"></i> 删除
+                </a>
+                <a class="btn btn-warning" onclick="$.table.exportExcel()" shiro:hasPermission="course:homework:export">
+                    <i class="fa fa-download"></i> 导出
+                </a>
+            </div>
+            <div class="col-sm-12 select-table table-striped">
+                <table id="bootstrap-table"></table>
+            </div>
+        </div>
+    </div>
+    <th:block th:include="include :: footer" />
+    <script th:inline="javascript">
+        var editFlag = [[${@permission.hasPermi('course:homework:edit')}]];
+        var removeFlag = [[${@permission.hasPermi('course:homework:remove')}]];
+        var publishDatas = [[${@dict.getType('sys_yes_no')}]];
+        var prefix = ctx + "course/homework";
+        var courseId = [[${courseId}]];
+        var chapterId = [[${chapterId}]];
+
+
+        $(function() {
+            //1.初始化搜索框
+            if(courseId != null){
+                $("#courseId").val(courseId);
+            }
+
+            if(chapterId != null){
+                $("#chapterId").val(chapterId);
+            }
+            //2.初始化列表
+            queryHomeworkList();
+        });
+
+        function queryHomeworkList(){
+            var options = {
+                url: prefix + "/list",
+                createUrl: prefix + "/add?courseId="+courseId+ "&chapterId="+chapterId,
+                updateUrl: prefix + "/edit/{id}",
+                removeUrl: prefix + "/remove",
+                exportUrl: prefix + "/export",
+                modalName: "作业管理",
+                columns: [{
+                    checkbox: true
+                },
+                {
+                    field: 'homeworkId',
+                    title: '作业编号',
+                    visible: false
+                },
+                {
+                    field: 'homeworkName',
+                    title: '作业名'
+                },
+                {
+                    field: 'chapterId',
+                    title: '章节编号'
+                },
+                {
+                    field: 'courseId',
+                    title: '课程编号'
+                },
+                {
+                    field: 'groupId',
+                    title: '布置给组'
+                },
+                {
+                    field: 'deadline',
+                    title: '截止时间'
+                },
+                {
+                    field: 'publish',
+                    title: '发布标志',
+                    formatter: function(value, row, index) {
+                        return $.table.selectDictLabel(publishDatas, value);
+                    }
+                },
+                {
+                    field: 'createBy',
+                    title: '创建者'
+                },
+                {
+                    field: 'createTime',
+                    title: '创建时间'
+                },
+                {
+                    title: '操作',
+                    align: 'center',
+                    formatter: function(value, row, index) {
+                        var actions = [];
+                        actions.push('<a class="btn btn-success btn-xs ' + editFlag + '" href="javascript:void(0)" onclick="$.operate.edit(\'' + row.homeworkId + '\')"><i class="fa fa-edit"></i>编辑</a> ');
+                        actions.push('<a class="btn btn-danger btn-xs ' + removeFlag + '" href="javascript:void(0)" onclick="$.operate.remove(\'' + row.homeworkId + '\')"><i class="fa fa-remove"></i>删除</a>');
+                        return actions.join('');
+                    }
+                }]
+            };
+            $.table.init(options);
+        }
+    </script>
+</body>
+</html>

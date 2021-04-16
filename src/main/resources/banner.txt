@@ -1,0 +1,3 @@
+Application Version: ${skuman.version}
+Spring Boot Version: ${spring-boot.version}
+////////////////////////////// Starting... ///////////////////////////////////

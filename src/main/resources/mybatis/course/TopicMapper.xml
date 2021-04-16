@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yi.project.course.topic.mapper.TopicMapper">
+    
+    <resultMap type="Topic" id="TopicResult">
+        <result property="topicId"    column="topic_id"    />
+        <result property="topicPid"    column="topic_pid"    />
+        <result property="title"    column="title"    />
+        <result property="content"    column="content"    />
+        <result property="courseId"    column="course_id"    />
+        <result property="chapterId"    column="chapter_id"    />
+        <result property="userId"    column="user_id"    />
+        <result property="userType"    column="user_type"    />
+        <result property="delFlag"    column="del_flag"    />
+        <result property="createTime"    column="create_time"    />
+    </resultMap>
+
+    <resultMap type="TopicVo" id="TopicVoResult">
+        <result property="topicId"    column="topic_id"    />
+        <result property="topicPid"    column="topic_pid"    />
+        <result property="title"    column="title"    />
+        <result property="content"    column="content"    />
+        <result property="courseId"    column="course_id"    />
+        <result property="chapterId"    column="chapter_id"    />
+        <result property="userId"    column="user_id"    />
+        <result property="userType"    column="user_type"    />
+        <result property="delFlag"    column="del_flag"    />
+        <result property="createTime"    column="create_time"    />
+    </resultMap>
+
+    <sql id="selectTopicVo">
+        select topic_id, topic_pid, title, content, course_id, chapter_id, user_id, user_type, del_flag,create_time from sku_topic
+    </sql>
+
+    <select id="selectTopicList" parameterType="Topic" resultMap="TopicVoResult">
+        <include refid="selectTopicVo"/>
+        <where>  
+            <if test="topicPid != null "> and topic_pid = #{topicPid}</if>
+            <if test="title != null  and title != ''"> and title like concat('%', #{title}, '%')</if>
+            <if test="courseId != null "> and course_id = #{courseId}</if>
+            <if test="chapterId != null "> and chapter_id = #{chapterId}</if>
+            <if test="userId != null "> and user_id = #{userId}</if>
+            <if test="delFlag != null  and delFlag != ''"> and del_flag = #{delFlag}</if>
+            <if test="userType != null  and userType != ''"> and user_type = #{userType}</if>
+        </where>
+        order by create_time desc
+
+    </select>
+    
+    <select id="selectTopicById" parameterType="Long" resultMap="TopicVoResult">
+        <include refid="selectTopicVo"/>
+        where topic_id = #{topicId}
+    </select>
+        
+    <insert id="insertTopic" parameterType="Topic">
+        insert into sku_topic
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="topicId != null">topic_id,</if>
+            <if test="topicPid != null">topic_pid,</if>
+            <if test="title != null">title,</if>
+            <if test="content != null">content,</if>
+            <if test="courseId != null">course_id,</if>
+            <if test="chapterId != null">chapter_id,</if>
+            <if test="userId != null">user_id,</if>
+            <if test="userType != null and userType != ''">user_type,</if>
+            <if test="createTime != null">create_time,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="topicId != null">#{topicId},</if>
+            <if test="topicPid != null">#{topicPid},</if>
+            <if test="title != null">#{title},</if>
+            <if test="content != null">#{content},</if>
+            <if test="courseId != null">#{courseId},</if>
+            <if test="chapterId != null">#{chapterId},</if>
+            <if test="userId != null">#{userId},</if>
+            <if test="userType != null and userType != ''">#{userType},</if>
+            <if test="createTime != null">#{createTime},</if>
+         </trim>
+    </insert>
+
+    <update id="updateTopic" parameterType="Topic">
+        update sku_topic
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="topicPid != null">topic_pid = #{topicPid},</if>
+            <if test="title != null">title = #{title},</if>
+            <if test="content != null">content = #{content},</if>
+            <if test="courseId != null">course_id = #{courseId},</if>
+            <if test="chapterId != null">chapter_id = #{chapterId},</if>
+            <if test="userId != null">user_id = #{userId},</if>
+            <if test="userType != null and userType != ''">user_type = #{userType},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+        </trim>
+        where topic_id = #{topicId}
+    </update>
+
+    <delete id="deleteTopicById" parameterType="Long">
+        delete from sku_topic where topic_id = #{topicId}
+    </delete>
+
+    <delete id="deleteTopicByIds" parameterType="String">
+        delete from sku_topic where topic_id in 
+        <foreach item="topicId" collection="array" open="(" separator="," close=")">
+            #{topicId}
+        </foreach>
+    </delete>
+
+    <select id="getCourseIds"  resultType="java.lang.Long">
+        select distinct  course_id
+        from sku_topic
+        where del_flag = '0'
+    </select>
+
+    <update id="deleteFlagByIds" parameterType="String">
+        update sku_topic
+        SET del_flag = '2'
+        where topic_id  in
+        <foreach item="topicId" collection="array" open="(" separator="," close=")">
+            #{topicId}
+        </foreach>
+    </update>
+
+</mapper>

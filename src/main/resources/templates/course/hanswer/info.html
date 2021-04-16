@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="zh" xmlns:th="http://www.thymeleaf.org" >
+<head>
+    <th:block th:include="include :: header('作业信息')" />
+</head>
+<body class="white-bg">
+    <div class="wrapper wrapper-content animated fadeInRight ibox-content">
+        <form class="form-horizontal m" id="form-hanswer-edit" th:object="${answer}">
+            <input name="answerId" th:field="*{answerId}" type="hidden">
+            <h4 class="form-header h4">评价信息<b style="color:red" th:if="${answer.excellent == 'Y'}" th:text="[优秀]"/></h4>
+            <div class="form-group">
+                <label class="col-sm-3 control-label">作业评分：</label>
+                <p class="form-control-static" th:text="*{score}"/>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label">是否优秀：</label>
+                <p class="form-control-static" />
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label">教师评语：</label>
+                <p class="form-control-static" th:text="*{comment}"/>
+            </div>
+            <h4 class="form-header h4">提交信息 [<b th:text="${#dates.format(answer.submitTime, 'yyyy-MM-dd HH:mm:ss')}"/>]</h4>
+            <div style="text-align:center;border:1px dashed #999;width:90%;margin:10px auto 20px;">
+                <div style="text-align:left;margin:10px auto;" th:utext="*{answerContent}"></div>
+            </div>
+            <h4 class="form-header h4">作业信息 [截止：<b th:text="${#dates.format(homework.deadline, 'yyyy-MM-dd HH:mm')}"/>]</h4>
+            <div style="text-align:center;border:1px dashed #999;width:90%;margin:10px auto;">
+                <h4 class="form-control-static" th:text="${homework.homeworkName}"/>
+                <div style="text-align:left;margin:10px;" th:utext="${homework.content}"></div>
+            </div>
+        </form>
+    </div>
+    <th:block th:include="include :: footer" />
+    <script th:inline="javascript">
+        function submitHandler() {
+        }
+    </script>
+</body>
+</html>

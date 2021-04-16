@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yi.project.course.signin.mapper.CourseSigninMapper">
+    
+    <resultMap type="CourseSigninVo" id="CourseSigninVoResult">
+        <result property="signinId"    column="signin_id"    />
+        <result property="signinName"    column="signin_name"    />
+        <result property="courseId"    column="course_id"    />
+        <result property="chapterId"    column="chapter_id"    />
+        <result property="startTime"    column="start_time"    />
+        <result property="endTime"    column="end_time"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="delFlag"    column="del_flag"    />
+    </resultMap>
+
+    <sql id="selectCourseSigninVo">
+        select signin_id, signin_name, course_id, chapter_id, start_time, end_time, create_by, create_time, del_flag from sku_course_signin
+    </sql>
+
+    <select id="selectCourseSigninList" parameterType="CourseSignin" resultMap="CourseSigninVoResult">
+        <include refid="selectCourseSigninVo"/>
+        <where>  
+            <if test="signinName != null  and signinName != ''"> and signin_name like concat('%', #{signinName}, '%')</if>
+            <if test="courseId != null "> and course_id = #{courseId}</if>
+            <if test="chapterId != null "> and chapter_id = #{chapterId}</if>
+            <if test="createBy != null and createBy != ''"> and create_by = #{createBy}</if>
+            <if test="delFlag != null and delFlag != ''">and del_flag = #{delFlag}</if>
+            <if test="params.beginCreateTime != null and params.beginCreateTime != '' and params.endCreateTime != null and params.endCreateTime != ''"> and create_time between #{params.beginCreateTime} and #{params.endCreateTime}</if>
+        </where>
+        order by end_time desc
+    </select>
+    
+    <select id="selectCourseSigninById" parameterType="Long" resultMap="CourseSigninVoResult">
+        <include refid="selectCourseSigninVo"/>
+        where signin_id = #{signinId}
+    </select>
+
+    <select id="selectSigninByCourseIds" parameterType="java.util.ArrayList" resultMap="CourseSigninVoResult">
+        <include refid="selectCourseSigninVo"/>
+        where del_flag = '0' and course_id in
+        <foreach item="courseId" collection="list" open="(" separator="," close=")">
+            #{courseId}
+        </foreach>
+        order by end_time desc
+
+    </select>
+
+    <select id="selectSigninByCourseId"  resultMap="CourseSigninVoResult">
+        <include refid="selectCourseSigninVo"/>
+        where del_flag = '0' and course_id = #{courseId}
+        <if test="currentTime != null">and #{currentTime} between start_time and end_time order by end_time</if>
+        <if test="currentTime == null">order by end_time desc</if>
+    </select>
+
+    <insert id="insertCourseSignin" parameterType="CourseSignin">
+        insert into sku_course_signin
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="signinId != null">signin_id,</if>
+            <if test="signinName != null">signin_name,</if>
+            <if test="courseId != null">course_id,</if>
+            <if test="chapterId != null">chapter_id,</if>
+            <if test="startTime != null">start_time,</if>
+            <if test="endTime != null">end_time,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="delFlag != null and delFlag != ''">del_flag,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="signinId != null">#{signinId},</if>
+            <if test="signinName != null">#{signinName},</if>
+            <if test="courseId != null">#{courseId},</if>
+            <if test="chapterId != null">#{chapterId},</if>
+            <if test="startTime != null">#{startTime},</if>
+            <if test="endTime != null">#{endTime},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="delFlag != null and delFlag != ''">#{delFlag},</if>
+         </trim>
+    </insert>
+
+    <update id="updateCourseSignin" parameterType="CourseSignin">
+        update sku_course_signin
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="signinName != null">signin_name = #{signinName},</if>
+            <if test="courseId != null">course_id = #{courseId},</if>
+            <if test="chapterId != null">chapter_id = #{chapterId},</if>
+            <if test="startTime != null">start_time = #{startTime},</if>
+            <if test="endTime != null">end_time = #{endTime},</if>
+            <if test="createBy != null">create_by = #{createBy},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="delFlag != null and delFlag != ''">del_flag = #{delFlag},</if>
+        </trim>
+        where signin_id = #{signinId}
+    </update>
+
+    <delete id="deleteCourseSigninById" parameterType="Long">
+        delete from sku_course_signin where signin_id = #{signinId}
+    </delete>
+
+    <delete id="deleteCourseSigninByIds" parameterType="String">
+        delete from sku_course_signin where signin_id in 
+        <foreach item="signinId" collection="array" open="(" separator="," close=")">
+            #{signinId}
+        </foreach>
+    </delete>
+
+    <update id="deleteFlagByIds" parameterType="String">
+        update sku_course_signin
+        SET del_flag = '2'
+        where signin_id  in
+        <foreach item="signinId" collection="array" open="(" separator="," close=")">
+            #{signinId}
+        </foreach>
+    </update>
+
+</mapper>

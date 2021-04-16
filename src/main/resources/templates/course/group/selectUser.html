@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="zh" xmlns:th="http://www.thymeleaf.org" >
+<head>
+	<th:block th:include="include :: header('成员添加')" />
+</head>
+
+<body class="gray-bg">
+	<div class="container-div">
+		<div class="row">
+			<div class="col-sm-12 search-collapse">
+				<form id="role-form">
+				    <input type="hidden" id="groupId" name="groupId" th:value="${groupId}">
+					<div class="select-list">
+						<ul>
+							<li>
+								班级：<input type="text" name="deptName"/>
+							</li>
+							<li>
+								登录名：<input type="text" name="loginName"/>
+							</li>
+							<li>
+								姓名：<input type="text" name="userName"/>
+							</li>
+							<li>
+								<a class="btn btn-primary btn-rounded btn-sm" onclick="$.table.search()"><i class="fa fa-search"></i>&nbsp;搜索</a>
+							    <a class="btn btn-warning btn-rounded btn-sm" onclick="$.form.reset()"><i class="fa fa-refresh"></i>&nbsp;重置</a>
+							</li>
+						</ul>
+					</div>
+				</form>
+			</div>
+	        
+	        <div class="col-sm-12 select-table table-striped">
+			    <table id="bootstrap-table"></table>
+			</div>
+		</div>
+	</div>
+	<th:block th:include="include :: footer" />
+	<script th:inline="javascript">
+		var datas = [[${@dict.getType('sys_normal_disable')}]];
+		var prefix = ctx + "course/group/user";
+
+		$(function() {
+			var options = {
+		        url: prefix + "/list",
+		        queryParams: queryParams,
+		        sortOrder: "desc",
+		        modalName: "用户",
+		        showSearch: false,
+		        showRefresh: false,
+		        showToggle: false,
+		        showColumns: false,
+		        clickToSelect: true,
+		        rememberSelected: true,
+		        columns: [{
+		        	field: 'state',
+		            checkbox: true
+		        },
+		        {
+		            field: 'userId',
+		            title: '用户ID'
+		        },
+		        {
+		            field: 'loginName',
+		            title: '登录名',
+		            sortable: true
+		        },
+		        {
+		            field: 'userName',
+		            title: '姓名'
+		        },
+
+		        {
+		            field: 'deptName',
+		            title: '班级'
+		        },
+		        {
+		        	field: 'status',
+		        	title: '状态',
+		        	align: 'center',
+		        	formatter: function (value, row, index) {
+		        		return $.table.selectDictLabel(datas, value);
+		        	}
+		        }
+		        ]
+		    };
+		    $.table.init(options);
+		});
+		
+		function queryParams(params) {
+			var search = $.table.queryParams(params);
+			search.notIn = true;
+			search.groupId = $("#groupId").val();
+			return search;
+		}
+		
+		/* 添加用户-选择用户-提交 */
+		function submitHandler() {
+			var rows = $.table.selectFirstColumns();
+			if (rows.length == 0) {
+       			$.modal.alertWarning("请至少选择一条记录");
+       			return;
+       		}
+			$.operate.save(prefix + "/add", {groupId: $("#groupId").val(), userIds: rows.join(",")});
+		}
+	</script>
+</body>
+</html>

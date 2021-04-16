@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html  lang="zh" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>首页</title>
+    <link rel="shortcut icon" href="favicon.ico">
+    <th:block th:include="include :: header('作业管理列表')" />
+</head>
+
+<body class="gray-bg">
+    <div class="row border-bottom white-bg dashboard-header">
+        <div class="col-sm-4">
+            <h2>网络教学平台</h2>
+            <p>
+                <b>当前时间：</b><span id="timeSpan"></span>
+            </p>
+            <p>
+                <b>当前版本：</b><span>v[[${version}]]</span>
+            </p>
+            <p>
+                <span class="label label-warning">欢迎使用!</span>
+            </p>
+            <!-- 签到 -->
+            <th:block th:include="include :: signin-list-js" th:if="${@shiro.isStudent()}"/>
+        </div>
+        <!-- 课程 -->
+        <div class="col-sm-8">
+            <th:block th:include="include :: course-list-js" />
+        </div>
+    </div>
+    <div class="row  border-bottom white-bg dashboard-header">
+        <!-- 通知 -->
+        <div class="col-sm-4" >
+            <th:block th:include="include :: notice-list-js" />
+        </div>
+        <!-- 作业 -->
+        <div class="col-sm-8" th:if="${@shiro.isTeacher() || @shiro.isAdmin()}">
+            <th:block th:include="include :: hanswer-list-js" />
+        </div>
+        <div class="col-sm-8" th:if="${@shiro.isStudent()}">
+            <th:block th:include="include :: homework-list-js" />
+        </div>
+    </div>
+    <th:block th:include="include :: footer" />
+    <script type="text/javascript">
+        var yesNo = [{"searchValue":null,"createBy":"admin","createTime":"2020-11-22 09:06:15","updateBy":null,"updateTime":null,"remark":"\u7CFB\u7EDF\u9ED8\u8BA4\u662F","params":{},"dictCode":12,"dictSort":1,"dictLabel":"\u662F","dictValue":"Y","dictType":"sys_yes_no","cssClass":"","listClass":"primary","isDefault":"Y","status":"0","default":true},{"searchValue":null,"createBy":"admin","createTime":"2020-11-22 09:06:15","updateBy":null,"updateTime":null,"remark":"\u7CFB\u7EDF\u9ED8\u8BA4\u5426","params":{},"dictCode":13,"dictSort":2,"dictLabel":"\u5426","dictValue":"N","dictType":"sys_yes_no","cssClass":"","listClass":"danger","isDefault":"N","status":"0","default":false}];
+
+        //每秒更新timeSpan时间
+        function timeSpan(){
+            function check(val) {
+                return val < 10 ? ("0" + val) : val;
+            }
+            var date = new Date();
+            $("#timeSpan").html([
+                date.getFullYear(), "年",
+                (date.getMonth() + 1) + "月",
+                date.getDate() + "日 ",
+                check(date.getHours())+ ":",
+                check(date.getMinutes()) + ":",
+                check(date.getSeconds())
+            ].join(""));
+        }
+        window.setInterval(timeSpan,1000);
+        (window.loadData || (window.loadData = [])).push(timeSpan);
+
+        $(function(){
+            window.loadData.forEach((f,i)=>f());
+        });
+    </script>
+</body>
+</html>

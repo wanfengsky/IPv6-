@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="zh" xmlns:th="http://www.thymeleaf.org" >
+<head>
+    <th:block th:include="include :: header('新增学生签到记录')" />
+</head>
+<body class="white-bg">
+    <div class="wrapper wrapper-content animated fadeInRight ibox-content">
+        <form class="form-horizontal m" id="form-signrecord-add">
+            <div class="form-group">
+                <label class="col-sm-3 control-label is-required">课程名称：</label>
+                <div class="col-sm-8">
+                    <select name="courseId" class="form-control" id="courseId" onchange="querySignin()" required>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label is-required">签到表名称：</label>
+                <div class="col-sm-8">
+                    <select name="signinId" class="form-control" id="signinId" required>
+                    </select>
+
+                </div>
+            </div>
+
+        </form>
+    </div>
+    <th:block th:include="include :: footer" />
+    <script th:inline="javascript">
+        var prefix = ctx + "course/signrecord"
+        $("#form-signrecord-add").validate({
+            focusCleanup: true
+        });
+
+        function submitHandler() {
+            if ($.validate.form()) {
+                $.operate.save(prefix + "/add", $('#form-signrecord-add').serialize());
+            }
+        }
+
+        function querySearchParam() {
+            //1.获取课程信息
+            $.ajax({
+                url:"/course/topic/courseDict",
+                type:"GET",
+                success:function (data){
+                    var htm = '';
+                    if(null == data.value){
+                        return;
+                    }
+                    for(var i=0;i<data.value.length;i++){
+                        var gr = data.value[i];
+                        htm += $.common.sprintf('<option value="%s" >%s</option>', gr.courseId, gr.courseName);
+                    }
+                    $("#courseId").html(htm);
+
+                    querySignin();
+                }
+            });
+
+
+        }
+
+        function querySignin() {
+            var courseId = $("#courseId").val();
+            if(courseId == undefined || courseId == null){
+                return;
+            }
+
+            //1.获取签到表信息
+            $.ajax({
+                url:"/course/signrecord/getSignin?courseId="+courseId,
+                type:"GET",
+                success:function (data){
+                    var htm = '';
+                    if(null == data.value){
+                        return;
+                    }
+                    for(var i=0;i<data.value.length;i++){
+                        var si = data.value[i];
+                        htm += $.common.sprintf('<option value="%s" >%s</option>', si.signinId, si.signinName);
+                    }
+                    $("#signinId").html(htm);
+                }
+            });
+        }
+
+        $(function (){
+            querySearchParam();
+
+        });
+    </script>
+</body>
+</html>

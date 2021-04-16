@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="zh" xmlns:th="http://www.thymeleaf.org" xmlns:shiro="http://www.pollix.at/thymeleaf/shiro">
+<head>
+    <th:block th:include="include :: header('学生话题列表')" />
+</head>
+<body class="gray-bg">
+     <div class="container-div">
+        <div class="row">
+            <div class="col-sm-12 search-collapse">
+                <form id="formId">
+                    <div class="select-list">
+                        <ul>
+
+                            <li>
+                                <label>课程名称：</label>
+
+                                <select name="courseId" id="courseId">
+                                </select>
+                            </li>
+
+                            <li>
+                                <label style="width: 95px">标题名称：</label>
+                                <input type="text" maxlength="100" name="title">
+                            </li>
+                            <li>
+                                <a class="btn btn-primary btn-rounded btn-sm" onclick="$.table.search()"><i class="fa fa-search"></i>&nbsp;搜索</a>
+                                <a class="btn btn-warning btn-rounded btn-sm" onclick="$.form.reset()"><i class="fa fa-refresh"></i>&nbsp;重置</a>
+                            </li>
+                        </ul>
+                    </div>
+                </form>
+            </div>
+
+            <div class="btn-group-sm" id="toolbar" role="group">
+                <a class="btn btn-success" onclick="$.operate.add()" shiro:hasPermission="course:topic:add">
+                    <i class="fa fa-plus"></i> 添加
+                </a>
+                <a class="btn btn-primary single disabled" onclick="$.operate.edit()" shiro:hasPermission="course:topic:edit">
+                    <i class="fa fa-edit"></i> 修改
+                </a>
+                <a class="btn btn-danger multiple disabled" onclick="$.operate.removeAll()" shiro:hasPermission="course:topic:remove">
+                    <i class="fa fa-remove"></i> 删除
+                </a>
+
+            </div>
+            <div class="col-sm-12 select-table table-striped">
+                <table id="bootstrap-table"></table>
+            </div>
+        </div>
+    </div>
+    <th:block th:include="include :: footer" />
+    <script th:inline="javascript">
+        var editFlag = [[${@permission.hasPermi('course:topic:edit')}]];
+        var removeFlag = [[${@permission.hasPermi('course:topic:remove')}]];
+        var userTypeDatas = [[${@dict.getType('sku_topic_user_type')}]];
+        var prefix = ctx + "course/topic";
+
+        function queryTopicList() {
+            var options = {
+                url: prefix + "/list",
+                createUrl: prefix + "/add",
+                updateUrl: prefix + "/edit/{id}",
+                removeUrl: prefix + "/remove",
+                exportUrl: prefix + "/export",
+                modalName: "学生话题",
+                columns: [{
+                    checkbox: true
+                },
+                    {
+                        field: 'topicId',
+                        title: '话题编号',
+                        visible: false
+                    },
+
+                    {
+                        field: 'title',
+                        title: '标题'
+                    },
+
+                    {
+                        field: 'courseName',
+                        title: '所属课程'
+                    },
+
+                    {
+                        field: 'userName',
+                        title: '创建者'
+                    },
+                    {
+                        field: 'createTime',
+                        title: '创建时间'
+                    },
+                    {
+                        title: '操作',
+                        align: 'center',
+                        formatter: function(value, row, index) {
+                            var actions = [];
+                            actions.push('<a class="btn btn-info btn-xs " href="javascript:void(0)" onclick="viewTopic(\'' + row.topicId + '\')"><i class="fa fa-chevron-circle-right"></i>查看</a> ');
+                            actions.push('<a class="btn btn-success btn-xs ' + editFlag + '" href="javascript:void(0)" onclick="$.operate.edit(\'' + row.topicId + '\')"><i class="fa fa-edit"></i>编辑</a> ');
+                            actions.push('<a class="btn btn-danger btn-xs ' + removeFlag + '" href="javascript:void(0)" onclick="$.operate.remove(\'' + row.topicId + '\')"><i class="fa fa-remove"></i>删除</a>');
+                            return actions.join('');
+                        }
+                    }]
+            };
+            $.table.init(options);
+        }
+
+        function querySearchParam() {
+            //1.获取课程信息
+            $.ajax({
+                url:"/course/topic/courseDict",
+                type:"GET",
+                success:function (data){
+                    var htm = '<option value="" selected="selected">所有</option>';
+                    if(null == data.value){
+                        return;
+                    }
+                    for(var i=0;i<data.value.length;i++){
+                        var gr = data.value[i];
+                        htm += $.common.sprintf('<option value="%s" >%s</option>', gr.courseId, gr.courseName);
+                    }
+                    $("#courseId").html(htm);
+                }
+            });
+        }
+        $(function() {
+            //1.初始化列表
+            queryTopicList();
+
+            //2.初始化搜索框
+            querySearchParam();
+        });
+
+        function viewTopic(topicId) {
+            var url = prefix + '/view/topicView?topicId=' + topicId;
+            $.modal.openFull('话题查看', url);
+        }
+    </script>
+</body>
+</html>

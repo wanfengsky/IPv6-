@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="zh" xmlns:th="http://www.thymeleaf.org" >
+<head>
+    <th:block th:include="include :: header('修改作业提交')" />
+</head>
+<body class="white-bg">
+    <div class="wrapper wrapper-content animated fadeInRight ibox-content">
+        <form class="form-horizontal m" id="form-hanswer-edit" th:object="${homeworkAnswer}">
+            <input name="answerId" th:field="*{answerId}" type="hidden">
+            <h4 class="form-header h4">作业评价</h4>
+            <div class="form-group">
+                <label class="col-sm-3 control-label">作业评分：</label>
+                <div class="col-sm-8">
+                    <input name="score" th:field="*{score}" class="form-control" type="text" number="true" range="0,100" placeholder="0-100">
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label">是否优秀：</label>
+                <div class="col-sm-8">
+                    <select name="excellent" class="form-control m-b" th:with="type=${@dict.getType('sys_yes_no')}">
+                        <option value=""></option>
+                        <option th:each="dict : ${type}" th:text="${dict.dictLabel}" th:value="${dict.dictValue}" th:field="*{excellent}"></option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label">评语：</label>
+                <div class="col-sm-8">
+                    <textarea name="comment" th:field="*{comment}" class="form-control" type="text" maxlength="500" placeholder="请输入500字以内的评语"></textarea>
+                </div>
+            </div>
+            <h4 class="form-header h4">作业应答</h4>
+            <div class="form-group">
+                <label class="col-sm-3 control-label">学生：</label>
+                <p class="form-control-static col-sm-8" th:text="${homeworkAnswer.userId}"/>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label">提交时间：</label>
+                <p class="form-control-static col-sm-8" th:text="${#dates.format(homeworkAnswer.submitTime, 'yyyy-MM-dd HH:mm:ss')}"/>
+            </div>
+            <div style="text-align:center;border:1px dashed #999;width:85%;margin:10px auto;">
+                <div style="text-align:left;margin:10px;" th:utext="${homeworkAnswer.answerContent}"></div>
+            </div>
+        </form>
+    </div>
+    <th:block th:include="include :: footer" />
+    <script th:inline="javascript">
+        var prefix = ctx + "course/hanswer";
+        $("#form-hanswer-edit").validate({
+            focusCleanup: true,
+            submitHandler:function(form){
+                form.submit();
+            }
+        });
+
+        function submitHandler() {
+            if ($.validate.form()) {
+                $.operate.save(prefix + "/edit", $('#form-hanswer-edit').serialize());
+            }
+        }
+    </script>
+</body>
+</html>

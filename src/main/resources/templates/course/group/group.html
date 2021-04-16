@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="zh" xmlns:th="http://www.thymeleaf.org" xmlns:shiro="http://www.pollix.at/thymeleaf/shiro">
+<head>
+    <th:block th:include="include :: header('学生班级列表')" />
+    <th:block th:include="include :: datetimepicker-css" />
+</head>
+<body class="gray-bg">
+     <div class="container-div">
+        <div class="row">
+            <div class="col-sm-12 search-collapse">
+                <form id="formId">
+                    <div class="select-list">
+                        <ul>
+                            <li>
+                                <label>班级编号：</label>
+                                <input type="text" name="groupId"/>
+                            </li>
+                            <li>
+                                <label>班级名称：</label>
+                                <input type="text" name="groupName"/>
+                            </li>
+                            <li>
+                                <label>课程：</label>
+                                <select name="courseId" th:with="type=${@course.courseDict()}" required>
+                                    <option value="">所有</option>
+                                    <option th:each="c : ${type}" th:text="${c.courseName}" th:value="${c.courseId}"></option>
+                                </select>
+                            </li>
+                            <li class="select-time">
+                                <label>有效日期：</label>
+                                <input type="text" id="validTime" placeholder="在此日期有效" name="params[validTime]"/>
+                            </li>
+                            <li class="select-time">
+                                <label>创建时间：</label>
+                                <input type="text" id="beginCreateTime" placeholder="开始时间" name="params[beginCreateTime]"/>
+                                <input type="text" id="endCreateTime" placeholder="结束时间" name="params[endCreateTime]"/>
+                            </li>
+                            <li>
+                                <a class="btn btn-primary btn-rounded btn-sm" onclick="$.table.search()"><i class="fa fa-search"></i>&nbsp;搜索</a>
+                                <a class="btn btn-warning btn-rounded btn-sm" onclick="$.form.reset()"><i class="fa fa-refresh"></i>&nbsp;重置</a>
+                            </li>
+                        </ul>
+                    </div>
+                </form>
+            </div>
+
+            <!-- 加入班级弹窗 -->
+            <div class="modal inmodal fade" id="addModal" tabindex="-1" role="dialog" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">关闭</span>
+                            </button>
+                            <i class="fa fa-laptop modal-icon"></i>
+                            <h4 class="modal-title">加入班级</h4>
+                            <small class="font-bold">您可以通过在此窗口输入想要加入的班级ID，直接成为班级成员。</small>
+                        </div>
+                        <div class="modal-body">
+                            <p>
+                                <b>【注意】</b><br/>
+                                1、只能加入公开课程的班级；<br/>
+                                2、无法重复加入同一个班级。
+                            </p>
+                            <div class="form-group">
+                                <input type="text" id="groupIdAdding" required placeholder="请输入您要加入的班级ID" class="form-control">
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-white" data-dismiss="modal">关闭</button>
+                            <button type="button" class="btn btn-primary" onclick="addInGroup()">加入</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- 班级二维码弹窗 -->
+            <div class="modal inmodal fade" id="groupQRDialog" tabindex="-1" role="dialog" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">关闭</span>
+                            </button>
+                            <i class="fa modal-icon"><img id="groupQR"/></i>
+                            <h4 class="modal-title">班级二维码</h4>
+                            <small class="font-bold">您可以通过扫描此二维码加入班级，直接成为班级成员。</small>
+                        </div>
+                        <div class="modal-body">
+                            <p>
+                                <b>【注意】</b><br/>
+                                1、只能加入公开课程的班级；<br/>
+                                2、无法重复加入同一个班级。
+                            </p>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-white" data-dismiss="modal">关闭</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+            <div class="btn-group-sm" id="toolbar" role="group">
+                <a class="btn btn-success" data-toggle="modal" data-target="#addModal" th:if="${@shiro.isStudent()}">
+                    <i class="fa fa-plus"></i> 加入班级
+                </a>
+                <a class="btn btn-success" onclick="$.operate.add()" shiro:hasPermission="course:group:add">
+                    <i class="fa fa-plus"></i> 添加
+                </a>
+                <a class="btn btn-primary single disabled" onclick="$.operate.edit()" shiro:hasPermission="course:group:edit">
+                    <i class="fa fa-edit"></i> 修改
+                </a>
+                <a class="btn btn-danger multiple disabled" onclick="$.operate.removeAll()" shiro:hasPermission="course:group:remove">
+                    <i class="fa fa-remove"></i> 删除
+                </a>
+                <a class="btn btn-warning" onclick="$.table.exportExcel()" shiro:hasPermission="course:group:export">
+                    <i class="fa fa-download"></i> 导出
+                </a>
+            </div>
+            <div class="col-sm-12 select-table table-striped">
+                <table id="bootstrap-table"></table>
+            </div>
+        </div>
+    </div>
+    <th:block th:include="include :: footer" />
+    <th:block th:include="include :: datetimepicker-js" />
+    <script th:inline="javascript">
+        var editFlag = [[${@permission.hasPermi('course:group:edit')}]];
+        var removeFlag = [[${@permission.hasPermi('course:group:remove')}]];
+        var yesNo = [[${@dict.getType('sys_yes_no')}]];
+        var addedResult = [[${addedResult}]];
+        var isStudent = [[${@shiro.isStudent()}]];
+        var prefix = ctx + "course/group";
+
+        $(function() {
+            if(!!addedResult) {
+       			// addedResult.code == 0 ? $.modal.alertSuccess(addedResult.msg) :  $.modal.alertError(addedResult.msg);
+                $.modal.confirm(addedResult.msg, function() {
+                    // 回到首页
+                    storage.set('historyPath', prefix);
+                    location.href = "/index";
+                });
+            }
+            var options = {
+                url: prefix + "/list",
+                createUrl: prefix + "/add",
+                updateUrl: prefix + "/edit/{id}",
+                removeUrl: prefix + "/remove",
+                exportUrl: prefix + "/export",
+                modalName: "学生班级",
+                columns: [{
+                    checkbox: true
+                },
+                {
+                    field: 'groupId',
+                    title: '班级编号'
+                },
+                {
+                    field: 'groupName',
+                    title: '班级名称'
+                },
+                {
+                    field: 'courseId',
+                    title: '课程编号',
+                    visible: false
+                },
+                {
+                    field: 'courseName',
+                    title: '课程名称'
+                },
+                {
+                    field: 'userCnt',
+                    title: '人数'
+                },
+                {
+                    field: 'valid',
+                    title: '是否有效',
+                    formatter: function(value, row, index) {
+                       return $.table.selectDictLabel(yesNo, value ? 'Y':'N');
+                    }
+                },
+                {
+                    field: 'startTime',
+                    title: '班级生效时间'
+                },
+                {
+                    field: 'endTime',
+                    title: '班级失效时间'
+                },
+                {
+                    field: 'createTime',
+                    title: '创建时间'
+                },
+                {
+                    title: '操作',
+                    align: 'center',
+                    formatter: function(value, row, index) {
+                        var actions = [];
+                        if(isStudent) {
+                            actions.push('<a class="btn btn-success btn-xs" href="javascript:void(0)" onclick="groupUser(' + row.groupId + ')"><i class="fa fa-group"></i> 成员</a>');
+                        } else {
+                            actions.push('<a class="btn btn-success btn-xs ' + editFlag + '" href="javascript:void(0)" onclick="$.operate.edit(' + row.groupId + ')"><i class="fa fa-edit"></i>编辑</a>');
+                            actions.push("<a class='btn btn-primary btn-xs " + editFlag + "' href='javascript:void(0)' onclick='groupUser(" + row.groupId + ")'><i class='fa fa-check-square-o'></i>管理</a>");
+                            actions.push("<a class='btn btn-primary btn-xs " + editFlag + "' href='javascript:void(0)' onclick='groupQR(" + row.groupId + ")'><i class='fa fa-qrcode'></i>二维码</a>");
+                            actions.push('<a class="btn btn-danger btn-xs ' + removeFlag + '" href="javascript:void(0)" onclick="$.operate.remove(' + row.groupId + ')"><i class="fa fa-remove"></i>删除</a>');
+                        }
+                        return actions.join(' ');
+                    }
+                }]
+            };
+            $.table.init(options);
+        });
+
+        /* 成员管理 */
+		function groupUser(groupId) {
+		    var url = prefix + '/view/groupUser?groupId=' + groupId;
+	    	$.modal.openFull('班级成员', url);
+		}
+
+        layui.use('laydate', function(){
+          var laydate = layui.laydate;
+          laydate.render({
+            elem: '#validTime',
+            type: 'date'
+          });
+
+          var startDate = laydate.render({
+            elem: '#beginCreateTime',
+            max: $('#endCreateTime').val(),
+            theme: 'molv',
+            trigger: 'click',
+            done: function(value, date) {
+                // 结束时间大于开始时间
+                if (value !== '') {
+                    endDate.config.min.year = date.year;
+                    endDate.config.min.month = date.month - 1;
+                    endDate.config.min.date = date.date;
+                } else {
+                    endDate.config.min.year = '';
+                    endDate.config.min.month = '';
+                    endDate.config.min.date = '';
+                }
+            }
+          });
+
+          var endDate = laydate.render({
+            elem: '#endCreateTime',
+            min: $('#beginCreateTime').val(),
+            theme: 'molv',
+            trigger: 'click',
+            done: function(value, date) {
+                // 开始时间小于结束时间
+                if (value !== '') {
+                    startDate.config.max.year = date.year;
+                    startDate.config.max.month = date.month - 1;
+                    startDate.config.max.date = date.date;
+                } else {
+                    startDate.config.max.year = '';
+                    startDate.config.max.month = '';
+                    startDate.config.max.date = '';
+                }
+            }
+          });
+       });
+
+       // 学生加入班级
+       function addInGroup() {
+            var groupIdAdding = $("#groupIdAdding").val();
+            if(!groupIdAdding || isNaN(groupIdAdding)) {
+                $.modal.msgError("请输入合法的班级ID！");
+                return;
+            }
+            $.post("/course/group/user/addGroup/" + groupIdAdding, function(result) {
+                if(result.code == 0){
+                    $.modal.msgSuccess(result.msg);
+                    $("#addModal").modal('hide');
+                    $("#groupIdAdding").val('');
+			        $("#bootstrap-table").bootstrapTable('refresh')
+                } else {
+                    $.modal.msgError(result.msg);
+                }
+            });
+       }
+
+        // 班级二维码
+        function groupQR(groupId){
+            $.getJSON(prefix + "/groupQR/"+groupId, function(rtn){
+                if(rtn && rtn.code == 0) {
+                    $("#groupQR").prop("src", "data:image/png;base64," + rtn.msg);
+                    $("#groupQRDialog").modal('show');
+                } else {
+                    $.modal.msgError(rtn.msg);
+                }
+            });
+        }
+    </script>
+</body>
+</html>

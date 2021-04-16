@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="zh" xmlns:th="http://www.thymeleaf.org" xmlns:shiro="http://www.pollix.at/thymeleaf/shiro">
+<head>
+    <th:block th:include="include :: header('作业提交列表')" />
+    <th:block th:include="include :: datetimepicker-css" />
+</head>
+<body class="gray-bg">
+     <div class="container-div">
+        <div class="row">
+            <div class="col-sm-12 search-collapse">
+                <form id="formSearch">
+                    <div class="select-list">
+                        <input type="hidden" id="homeworkId" name="homeworkId" th:value="${homeworkId}"/>
+                        <ul>
+                            <li>
+                                <label>班级：</label>
+                                <select id="groupIdQuery" name="groupId">
+                                    <option value="">所有</option>
+                                </select>
+                            </li>
+                            <li>
+                                <label>学生ID：</label>
+                                <input type="text" name="userId"/>
+                            </li>
+                            <li class="select-time">
+                                <label>提交时间：</label>
+                                <input type="text" id="beginSubmitTime" placeholder="开始时间" name="params[beginSubmitTime]"/>
+                                <input type="text" id="endSubmitTime" placeholder="结束时间" name="params[endSubmitTime]"/>
+                            </li>
+                            <li>
+                                <label>是否优秀：</label>
+                                <select name="excellent" th:with="type=${@dict.getType('sys_yes_no')}">
+                                    <option value="">所有</option>
+                                    <option th:each="dict : ${type}" th:text="${dict.dictLabel}" th:value="${dict.dictValue}"></option>
+                                </select>
+                            </li>
+                            <li>
+                                <a class="btn btn-primary btn-rounded btn-sm" onclick="$.table.search()"><i class="fa fa-search"></i>&nbsp;搜索</a>
+                                <a class="btn btn-warning btn-rounded btn-sm" onclick="$.form.reset()"><i class="fa fa-refresh"></i>&nbsp;重置</a>
+                            </li>
+                        </ul>
+                    </div>
+                </form>
+            </div>
+
+            <div class="btn-group-sm" id="toolbar" role="group">
+                <a class="btn btn-primary single disabled" onclick="$.operate.edit()" shiro:hasPermission="course:hanswer:edit">
+                    <i class="fa fa-edit"></i> 修改
+                </a>
+                <a class="btn btn-danger multiple disabled" onclick="$.operate.removeAll()" shiro:hasPermission="course:hanswer:remove">
+                    <i class="fa fa-remove"></i> 删除
+                </a>
+                <a class="btn btn-warning" onclick="$.table.exportExcel()" shiro:hasPermission="course:hanswer:export">
+                    <i class="fa fa-download"></i> 导出
+                </a>
+            </div>
+            <div class="col-sm-12 select-table table-striped">
+                <table id="bootstrap-table"></table>
+            </div>
+        </div>
+    </div>
+    <th:block th:include="include :: footer" />
+    <th:block th:include="include :: datetimepicker-js" />
+    <script th:inline="javascript">
+        var editFlag = [[${@permission.hasPermi('course:hanswer:edit')}]];
+        var homeworkId = [[${homeworkId}]];
+        var removeFlag = [[${@permission.hasPermi('course:hanswer:remove')}]];
+        var excellentDatas = [[${@dict.getType('sys_yes_no')}]];
+        var prefix = ctx + "course/hanswer";
+
+        // 分組查詢條件
+        $(function() {
+            $.getJSON(ctx+"course/homework/homeworkGroups",{homeworkId: homeworkId}, function(groups){
+                if(groups && groups.code == 200 && groups.value){
+                    var htm = [], datas = groups.value;
+                    for(var i=0;i < datas.length;i++){
+                        htm.push('<option value="' + datas[i].groupId + '">'+ datas[i].groupName +'</option>');
+                    }
+                    $("#groupIdQuery").append(htm.join());
+                }
+            });
+        });
+
+        $(function() {
+            var options = {
+                url: prefix + "/list",
+                createUrl: prefix + "/add",
+                updateUrl: prefix + "/edit/{id}",
+                removeUrl: prefix + "/remove",
+                exportUrl: prefix + "/export",
+                modalName: "作业列表",
+                columns: [{
+                    checkbox: true
+                },
+                {
+                    field: 'answerId',
+                    title: 'ID'
+                },
+                {
+                    field: 'groupId',
+                    title: '班级编号',
+                    visible: false
+                },
+                {
+                    field: 'groupName',
+                    title: '组名'
+                },
+                {
+                    field: 'userId',
+                    title: '学生编号',
+                    visible: false
+                },
+                {
+                    field: 'userName',
+                    title: '学生',
+                    formatter: function(value, row, index) {
+                       return '<b>'+row.userId+'</b> '+value;
+                    }
+                },
+                {
+                    field: 'submitTime',
+                    title: '提交时间'
+                },
+                {
+                    field: 'answerContent',
+                    title: '作业内容',
+                    formatter: function(value, row, index) {
+                       return '<p style="overflow: hidden;text-overflow:ellipsis;white-space: nowrap;width: 250px;">'+htmlText(value)+'</p>';
+                    }
+                },
+                {
+                    field: 'comment',
+                    title: '作业评语',
+                    formatter: function(value, row, index) {
+                        if(value){
+                            return '<p style="overflow: hidden;text-overflow:ellipsis;white-space: nowrap;width: 100px;">'+value+'</p>';
+                       }
+                    }
+                },
+                {
+                    field: 'score',
+                    title: '作业分数'
+                },
+                {
+                    field: 'excellent',
+                    title: '优秀',
+                    formatter: function(value, row, index) {
+                       return $.table.selectDictLabel(excellentDatas, value);
+                    }
+                },
+                {
+                    title: '操作',
+                    align: 'center',
+                    formatter: function(value, row, index) {
+                        var actions = [];
+                        actions.push('<a class="btn btn-primary btn-xs ' + editFlag + '" href="javascript:void(0)" onclick="$.operate.edit(\'' + row.answerId + '\')"><i class="fa fa-check"></i>批改</a> ');
+                        actions.push('<a class="btn btn-danger btn-xs ' + removeFlag + '" href="javascript:void(0)" onclick="$.operate.remove(\'' + row.answerId + '\')"><i class="fa fa-remove"></i>删除</a>');
+                        return actions.join('');
+                    }
+                }]
+            };
+            $.table.init(options);
+        });
+
+        layui.use('laydate', function(){
+          var laydate = layui.laydate;
+            var startDate = laydate.render({
+                elem: '#beginSubmitTime',
+                max: $('#endSubmitTime').val(),
+                theme: 'molv',
+                trigger: 'click',
+                done: function(value, date) {
+                    // 结束时间大于开始时间
+                    if (value !== '') {
+                        endDate.config.min.year = date.year;
+                        endDate.config.min.month = date.month - 1;
+                        endDate.config.min.date = date.date;
+                    } else {
+                        endDate.config.min.year = '';
+                        endDate.config.min.month = '';
+                        endDate.config.min.date = '';
+                    }
+                }
+            });
+            var endDate = laydate.render({
+                elem: '#endSubmitTime',
+                min: $('#beginSubmitTime').val(),
+                theme: 'molv',
+                trigger: 'click',
+                done: function(value, date) {
+                    // 开始时间小于结束时间
+                    if (value !== '') {
+                        startDate.config.max.year = date.year;
+                        startDate.config.max.month = date.month - 1;
+                        startDate.config.max.date = date.date;
+                    } else {
+                        startDate.config.max.year = '';
+                        startDate.config.max.month = '';
+                        startDate.config.max.date = '';
+                    }
+                }
+            });
+        });
+        // 新增作业答案
+        function addHanswer(){
+            var homeworkId = $("#homeworkId").val();
+            var groupId = $("#groupId").val();
+            $.modal.open("作业提交",prefix + "/view/add?homeworkId=" + homeworkId + "&groupId=" + groupId);
+        }
+
+		/* 确定回调 */
+		function submitHandler() {
+			$.modal.reload();
+		}
+    </script>
+</body>
+</html>

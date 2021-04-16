@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yi.project.course.homework.mapper.HomeworkAnswerMapper">
+    
+    <resultMap type="HomeworkAnswer" id="HomeworkAnswerResult">
+        <result property="answerId"    column="answer_id"    />
+        <result property="homeworkId"    column="homework_id"    />
+        <result property="homeworkName"    column="homework_name"    />
+        <result property="groupId"    column="group_id"    />
+        <result property="userId"    column="user_id"    />
+        <result property="submitTime"    column="submit_time"    />
+        <result property="answerContent"    column="answer_content"    />
+        <result property="comment"    column="comment"    />
+        <result property="score"    column="score"    />
+        <result property="excellent"    column="excellent"    />
+        <result property="delFlag"    column="del_flag"    />
+    </resultMap>
+
+    <sql id="selectHomeworkAnswerVo">
+        SELECT
+            ha.answer_id, ha.homework_id, ha.group_id, ha.user_id, ha.submit_time, ha.answer_content, ha.comment, ha.score, ha.excellent, ha.del_flag,
+            h.homework_name
+        FROM sku_homework_answer ha
+        INNER JOIN sku_homework h ON h.homework_id = ha.homework_id
+    </sql>
+
+    <select id="selectHomeworkAnswerList" parameterType="HomeworkAnswer" resultMap="HomeworkAnswerResult">
+        <include refid="selectHomeworkAnswerVo"/>
+        <where>  
+            <if test="answerId != null "> and ha.answer_id = #{answerId}</if>
+            <if test="homeworkId != null "> and ha.homework_id = #{homeworkId}</if>
+            <if test="groupId != null "> and ha.group_id = #{groupId}</if>
+            <if test="score != null and score == -1"> AND ha.score IS NULL AND (ha.comment IS NULL OR LENGTH(ha.comment)=0)</if>
+            <if test="userId != null "> and ha.user_id = #{userId}</if>
+            <if test="params.beginSubmitTime != null and params.beginSubmitTime != '' and params.endSubmitTime != null and params.endSubmitTime != ''"> and ha.submit_time between #{params.beginSubmitTime} and #{params.endSubmitTime}</if>
+            <if test="params.beginScore != null and params.beginScore != '' and params.endScore != null and params.endScore != ''"> and ha.score between #{params.beginScore} and #{params.endScore}</if>
+            <if test="excellent != null and excellent != ''"> and ha.excellent = #{excellent}</if>
+            <if test="owner != null"> and h.create_by = #{owner}</if>
+        </where>
+        ORDER BY ha.submit_time DESC
+    </select>
+    
+    <select id="selectHomeworkAnswerById" parameterType="Long" resultMap="HomeworkAnswerResult">
+        <include refid="selectHomeworkAnswerVo"/>
+        where ha.answer_id = #{answerId}
+    </select>
+        
+    <insert id="insertHomeworkAnswer" parameterType="HomeworkAnswer" useGeneratedKeys="true" keyProperty="answerId">
+        insert into sku_homework_answer
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="homeworkId != null">homework_id,</if>
+            <if test="groupId != null">group_id,</if>
+            <if test="userId != null">user_id,</if>
+            <if test="submitTime != null">submit_time,</if>
+            <if test="answerContent != null and answerContent != ''">answer_content,</if>
+            <if test="comment != null">comment,</if>
+            <if test="score != null">score,</if>
+            <if test="excellent != null">excellent,</if>
+            <if test="delFlag != null and delFlag != ''">del_flag,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="homeworkId != null">#{homeworkId},</if>
+            <if test="groupId != null">#{groupId},</if>
+            <if test="userId != null">#{userId},</if>
+            <if test="submitTime != null">#{submitTime},</if>
+            <if test="answerContent != null and answerContent != ''">#{answerContent},</if>
+            <if test="comment != null">#{comment},</if>
+            <if test="score != null">#{score},</if>
+            <if test="excellent != null">#{excellent},</if>
+            <if test="delFlag != null and delFlag != ''">#{delFlag},</if>
+         </trim>
+    </insert>
+
+    <update id="updateHomeworkAnswer" parameterType="HomeworkAnswer">
+        update sku_homework_answer
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="homeworkId != null">homework_id = #{homeworkId},</if>
+            <if test="groupId != null">group_id = #{groupId},</if>
+            <if test="userId != null">user_id = #{userId},</if>
+            <if test="submitTime != null">submit_time = #{submitTime},</if>
+            <if test="answerContent != null and answerContent != ''">answer_content = #{answerContent},</if>
+            <if test="comment != null">comment = #{comment},</if>
+            <if test="score != null">score = #{score},</if>
+            <if test="excellent != null">excellent = #{excellent},</if>
+            <if test="delFlag != null and delFlag != ''">del_flag = #{delFlag},</if>
+        </trim>
+        where answer_id = #{answerId}
+    </update>
+
+    <delete id="deleteHomeworkAnswerById" parameterType="Long">
+        delete from sku_homework_answer where answer_id = #{answerId}
+    </delete>
+
+    <delete id="deleteHomeworkAnswerByIds" parameterType="String">
+        delete from sku_homework_answer where answer_id in 
+        <foreach item="answerId" collection="array" open="(" separator="," close=")">
+            #{answerId}
+        </foreach>
+    </delete>
+
+</mapper>

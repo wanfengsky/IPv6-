@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="zh" xmlns:th="http://www.thymeleaf.org" xmlns:shiro="http://www.pollix.at/thymeleaf/shiro">
+<head>
+	<th:block th:include="include :: header('成员管理')" />
+</head>
+<body class="gray-bg">
+	<div class="container-div">
+		<div class="row">
+			<div class="col-sm-12 search-collapse">
+				<form id="role-form">
+				    <input type="hidden" id="groupId" name="groupId" th:value="${groupId}">
+					<div class="select-list">
+						<ul>
+							<li>
+								登录名称：<input type="text" name="loginName"/>
+							</li>
+							<li>
+								姓名：<input type="text" name="userName"/>
+							</li>
+							<li>
+								<a class="btn btn-primary btn-rounded btn-sm" onclick="$.table.search()"><i class="fa fa-search"></i>&nbsp;搜索</a>
+							    <a class="btn btn-warning btn-rounded btn-sm" onclick="$.form.reset()"><i class="fa fa-refresh"></i>&nbsp;重置</a>
+							</li>
+						</ul>
+					</div>
+				</form>
+			</div>
+	        
+	        <div class="btn-group-sm" id="toolbar" role="group">
+				<a class="btn btn-success" onclick="selectUser()" shiro:hasPermission="course:group:edit">
+	                <i class="fa fa-plus"></i> 添加
+	            </a>
+				<a class="btn btn-danger multiple disabled" onclick="removeUserAll()" shiro:hasPermission="course:group:remove">
+		            <i class="fa fa-remove"></i> 批量删除
+		        </a>
+				<a class="btn btn-warning" onclick="$.table.exportExcel()" shiro:hasPermission="course:group:export">
+					<i class="fa fa-download"></i> 导出
+				</a>
+	        </div>
+	        
+	        <div class="col-sm-12 select-table table-striped">
+			    <table id="bootstrap-table"></table>
+			</div>
+		</div>
+	</div>
+	<th:block th:include="include :: footer" />
+	<script th:inline="javascript">
+		var removeFlag = [[${@permission.hasPermi('course:group:remove')}]];
+        var isStudent = [[${@shiro.isStudent()}]];
+		var datas = [[${@dict.getType('sys_normal_disable')}]];
+		var prefix = ctx + "course/group";
+
+		$(function() {
+			var options = {
+		        url: prefix + "/user/list",
+		        removeUrl: prefix + "/user/remove",
+		        exportUrl: prefix + "/user/export",
+		        queryParams: queryParams,
+		        sortName: "createTime",
+		        sortOrder: "desc",
+		        modalName: "用户",
+		        columns: [{
+		            checkbox: true
+		        },
+		        {
+		            field: 'groupUserId',
+		            title: 'ID',
+		            visible: false
+		        },
+		        {
+		            field: 'userId',
+		            title: '用户ID'
+		        },
+		        {
+		            field: 'loginName',
+		            title: '登录名',
+		            sortable: true
+		        },
+		        {
+		            field: 'userName',
+		            title: '姓名'
+		        },
+
+				{
+					field: 'deptName',
+					title: '班级'
+				},
+		        {
+		        	field: 'status',
+		        	title: '状态',
+		        	align: 'center',
+		        	formatter: function (value, row, index) {
+		        		return $.table.selectDictLabel(datas, value);
+		        	}
+		        },
+		        {
+		            field: 'createTime',
+		            title: '创建时间',
+		            sortable: true
+		        },
+		        {
+		            title: '操作',
+		            align: 'center',
+		            visible: !isStudent,
+		            formatter: function(value, row, index) {
+		                var actions = [];
+		                actions.push('<a class="btn btn-danger btn-xs ' + removeFlag + '" href="javascript:void(0)" onclick="removeUser(\'' + row.groupUserId + '\')"><i class="fa fa-remove"></i>移出</a> ');
+		                return actions.join('');
+		            }
+		        }]
+		    };
+		    $.table.init(options);
+		});
+		
+		function queryParams(params) {
+			var search = $.table.queryParams(params);
+			search.notIn = false;
+			search.groupId = $("#groupId").val();
+			return search;
+		}
+		
+		/* 分配用户- */
+		function selectUser() {
+			var url = prefix + '/view/selectUser?groupId=' +  $("#groupId").val();
+		    $.modal.open("选择用户", url);
+		}
+		
+		/* 分配用户-批量删除用户 */
+		function removeUserAll() {
+		    var rows = $.table.selectFirstColumns();
+       		if (rows.length == 0) {
+       			$.modal.alertWarning("请至少选择一条记录");
+       			return;
+       		}
+       		$.modal.confirm("确认要删除选中的" + rows.length + "条数据吗?", function() {
+    			var data = {"ids": rows.join()};
+    			$.operate.submit(prefix + "/user/remove", "post", "json", data);
+    		});
+		}
+		
+		/* 删除用户 */
+		function removeUser(id) {
+			$.modal.confirm("确认要删除吗？", function() {
+				$.operate.post(prefix + "/user/remove", {"ids": id});
+		    })
+		}
+
+		/* 确定回调 */
+		function submitHandler() {
+			$.modal.reload();
+		}
+	</script>
+</body>
+</html>

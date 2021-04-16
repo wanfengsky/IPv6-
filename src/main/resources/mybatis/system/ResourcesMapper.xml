@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yi.project.system.resources.mapper.ResourcesMapper">
+    
+    <resultMap type="Resources" id="ResourcesResult">
+        <result property="resourceId"    column="resource_id"    />
+        <result property="resourceName"    column="resource_name"    />
+        <result property="resourceInfo"    column="resource_info"    />
+        <result property="resourceType"    column="resource_type"    />
+        <result property="resourcePath"    column="resource_path"    />
+        <result property="businzId"    column="businz_id"    />
+        <result property="businzType"    column="businz_type"    />
+        <result property="businzTag"    column="businz_tag"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="delFlag"    column="del_flag"    />
+    </resultMap>
+
+    <sql id="selectResourcesVo">
+        select resource_id, resource_name, resource_info, resource_type, resource_path, businz_id, businz_type, businz_tag, create_by, create_time, del_flag from sku_resource
+    </sql>
+
+    <select id="selectResourcesList" parameterType="Resources" resultMap="ResourcesResult">
+        <include refid="selectResourcesVo"/>
+        <where>  
+            <if test="resourceName != null  and resourceName != ''"> and resource_name like concat('%', #{resourceName}, '%')</if>
+            <if test="resourceType != null  and resourceType != ''"> and resource_type = #{resourceType}</if>
+            <if test="businzId != null "> and businz_id = #{businzId}</if>
+            <if test="businzType != null  and businzType != ''"> and businz_type = #{businzType}</if>
+            <if test="businzTag != null  and businzTag != ''"> and businz_tag = #{businzTag}</if>
+            <if test="createBy != null and createBy != '' "> and create_by = #{createBy}</if>
+            <if test="delFlag != null  and delFlag != ''"> and del_flag = #{delFlag}</if>
+        </where>
+    </select>
+    
+    <select id="selectResourcesById" parameterType="Long" resultMap="ResourcesResult">
+        <include refid="selectResourcesVo"/>
+        where resource_id = #{resourceId}
+    </select>
+        
+    <insert id="insertResources" parameterType="Resources" useGeneratedKeys="true" keyProperty="resourceId">
+        insert into sku_resource
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="resourceName != null and resourceName != ''">resource_name,</if>
+            <if test="resourceInfo != null">resource_info,</if>
+            <if test="resourceType != null">resource_type,</if>
+            <if test="resourcePath != null">resource_path,</if>
+            <if test="businzId != null">businz_id,</if>
+            <if test="businzType != null">businz_type,</if>
+            <if test="businzTag != null">businz_tag,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="delFlag != null">del_flag,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="resourceName != null and resourceName != ''">#{resourceName},</if>
+            <if test="resourceInfo != null">#{resourceInfo},</if>
+            <if test="resourceType != null">#{resourceType},</if>
+            <if test="resourcePath != null">#{resourcePath},</if>
+            <if test="businzId != null">#{businzId},</if>
+            <if test="businzType != null">#{businzType},</if>
+            <if test="businzTag != null">#{businzTag},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="delFlag != null">#{delFlag},</if>
+         </trim>
+    </insert>
+
+    <update id="updateResources" parameterType="Resources">
+        update sku_resource
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="resourceName != null and resourceName != ''">resource_name = #{resourceName},</if>
+            <if test="resourceInfo != null">resource_info = #{resourceInfo},</if>
+            <if test="resourceType != null">resource_type = #{resourceType},</if>
+            <if test="resourcePath != null">resource_path = #{resourcePath},</if>
+            <if test="businzId != null">businz_id = #{businzId},</if>
+            <if test="businzType != null">businz_type = #{businzType},</if>
+            <if test="businzTag != null">businz_tag = #{businzTag},</if>
+            <if test="createBy != null">create_by = #{createBy},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="delFlag != null">del_flag = #{delFlag},</if>
+        </trim>
+        where resource_id = #{resourceId}
+    </update>
+
+    <delete id="deleteResourcesById" parameterType="Long">
+        delete from sku_resource where resource_id = #{resourceId}
+    </delete>
+
+    <delete id="deleteResourcesByIds" parameterType="String">
+        delete from sku_resource where resource_id in 
+        <foreach item="resourceId" collection="array" open="(" separator="," close=")">
+            #{resourceId}
+        </foreach>
+    </delete>
+
+    <update id="deleteFlagByIds" parameterType="String">
+        update sku_resource
+
+        SET del_flag = '2'
+        where resource_id  in
+        <foreach item="resourceId" collection="array" open="(" separator="," close=")">
+            #{resourceId}
+        </foreach>
+    </update>
+
+</mapper>

@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yi.project.course.sign.record.mapper.CourseSigninRecordMapper">
+    
+    <resultMap type="CourseSigninRecord" id="CourseSigninRecordResult">
+        <result property="recordId"    column="record_id"    />
+        <result property="signinId"    column="signin_id"    />
+        <result property="userId"    column="user_id"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="delFlag"    column="del_flag"    />
+    </resultMap>
+
+    <sql id="selectCourseSigninRecordVo">
+        select record_id, signin_id, user_id, create_time, del_flag from sku_course_signin_record
+    </sql>
+
+    <select id="selectCourseSigninRecordList" parameterType="CourseSigninRecord" resultMap="CourseSigninRecordResult">
+        <include refid="selectCourseSigninRecordVo"/>
+        <where>  
+            <if test="signinId != null "> and signin_id = #{signinId}</if>
+            <if test="userId != null "> and user_id = #{userId}</if>
+            <if test="params.beginCreateTime != null and params.beginCreateTime != '' and params.endCreateTime != null and params.endCreateTime != ''"> and create_time between #{params.beginCreateTime} and #{params.endCreateTime}</if>
+        </where>
+    </select>
+    
+    <select id="selectCourseSigninRecordById" parameterType="Long" resultMap="CourseSigninRecordResult">
+        <include refid="selectCourseSigninRecordVo"/>
+        where record_id = #{recordId}
+    </select>
+        
+    <insert id="insertCourseSigninRecord" parameterType="CourseSigninRecord">
+        insert into sku_course_signin_record
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="recordId != null">record_id,</if>
+            <if test="signinId != null">signin_id,</if>
+            <if test="userId != null">user_id,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="delFlag != null and delFlag != ''">del_flag,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="recordId != null">#{recordId},</if>
+            <if test="signinId != null">#{signinId},</if>
+            <if test="userId != null">#{userId},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="delFlag != null and delFlag != ''">#{delFlag},</if>
+         </trim>
+    </insert>
+
+    <update id="updateCourseSigninRecord" parameterType="CourseSigninRecord">
+        update sku_course_signin_record
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="signinId != null">signin_id = #{signinId},</if>
+            <if test="userId != null">user_id = #{userId},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="delFlag != null and delFlag != ''">del_flag = #{delFlag},</if>
+        </trim>
+        where record_id = #{recordId}
+    </update>
+
+    <delete id="deleteCourseSigninRecordById" parameterType="Long">
+        delete from sku_course_signin_record where record_id = #{recordId}
+    </delete>
+
+    <delete id="deleteCourseSigninRecordByIds" parameterType="String">
+        delete from sku_course_signin_record where record_id in 
+        <foreach item="recordId" collection="array" open="(" separator="," close=")">
+            #{recordId}
+        </foreach>
+    </delete>
+
+</mapper>

@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="zh" xmlns:th="http://www.thymeleaf.org" xmlns:shiro="http://www.pollix.at/thymeleaf/shiro">
+<head>
+    <th:block th:include="include :: header('签到管理列表')" />
+</head>
+<body class="gray-bg">
+     <div class="container-div">
+        <div class="row">
+            <div class="col-sm-12 search-collapse">
+                <form id="formId">
+                    <div class="select-list">
+                        <ul>
+                            <li>
+                                <label>签到表名：</label>
+                                <input type="text" name="signinName"/>
+                            </li>
+                            <li>
+                                <label>所属课程：</label>
+                                <select name="courseId"  id="courseId">
+                                </select>
+
+                            </li>
+
+
+                            <li class="select-time">
+                                <label>创建时间：</label>
+                                <input type="text" id="startTimes" placeholder="开始时间" name="params[beginCreateTime]"/>
+                                <span>-</span>
+                                <input type="text"  id="endTimes" placeholder="结束时间" name="params[endCreateTime]"/>
+                            </li>
+                            <li>
+                                <a class="btn btn-primary btn-rounded btn-sm" onclick="$.table.search()"><i class="fa fa-search"></i>&nbsp;搜索</a>
+                                <a class="btn btn-warning btn-rounded btn-sm" onclick="$.form.reset()"><i class="fa fa-refresh"></i>&nbsp;重置</a>
+                            </li>
+                        </ul>
+                    </div>
+                </form>
+            </div>
+
+            <div class="btn-group-sm" id="toolbar" role="group">
+                <a class="btn btn-success" onclick="$.operate.add()" shiro:hasPermission="course:signin:add">
+                    <i class="fa fa-plus"></i> 添加
+                </a>
+                <a class="btn btn-primary single disabled" onclick="$.operate.edit()" shiro:hasPermission="course:signin:edit">
+                    <i class="fa fa-edit"></i> 修改
+                </a>
+                <a class="btn btn-danger multiple disabled" onclick="$.operate.removeAll()" shiro:hasPermission="course:signin:remove">
+                    <i class="fa fa-remove"></i> 删除
+                </a>
+
+            </div>
+            <div class="col-sm-12 select-table table-striped">
+                <table id="bootstrap-table"></table>
+            </div>
+        </div>
+    </div>
+    <th:block th:include="include :: footer" />
+    <script th:inline="javascript">
+        var editFlag = [[${@permission.hasPermi('course:signin:edit')}]];
+        var removeFlag = [[${@permission.hasPermi('course:signin:remove')}]];
+        var addFlag = [[${@permission.hasPermi('course:signrecord:add')}]];
+        var prefix = ctx + "course/signin";
+
+        function signinRecord(signinId) {
+            //1.获取课程信息
+            $.ajax({
+                url:"/course/signrecord/add",
+                data:{
+                    signinId:signinId
+                },
+                dataType:"json",
+                type:"POST",
+                success:function (data){
+                    $("#bootstrap-table").bootstrapTable('refresh');
+                }
+            });
+        }
+
+        function querySigninList(){
+            var options = {
+                url: prefix + "/list",
+                createUrl: prefix + "/add",
+                updateUrl: prefix + "/edit/{id}",
+                removeUrl: prefix + "/remove",
+                exportUrl: prefix + "/export",
+                modalName: "签到管理",
+                columns: [{
+                    checkbox: true
+                },
+                    {
+                        field: 'signinId',
+                        title: '签到表编号',
+                        visible: false
+                    },
+                    {
+                        field: 'courseName',
+                        title: '课程'
+                    },
+
+                    {
+                        field: 'signinName',
+                        title: '签到表名'
+                    },
+
+                    {
+                        field: 'startTime',
+                        title: '开始时间'
+                    },
+                    {
+                        field: 'endTime',
+                        title: '结束时间'
+                    },
+                    {
+                        field: 'createBy',
+                        title: '创建者'
+                    },
+                    {
+                        field: 'createTime',
+                        title: '创建时间'
+                    },
+                    {
+                        title: '操作',
+                        align: 'center',
+                        formatter: function(value, row, index) {
+                            var actions = [];
+                            if(row.signinFlag == "1"){
+                                actions.push('<a class="btn btn-primary btn-xs ' + addFlag + '" href="javascript:void(0)" ><i class="fa fa-check-square-o"></i> 已签到</a> ');
+                            } else if(row.signinFlag == "2"){
+                                actions.push('<a class="btn btn-danger btn-xs ' + addFlag + '" href="javascript:void(0)" ><i class="fa fa-times"></i> 未签到</a> ');
+                            } else {
+                                actions.push('<a class="btn btn-success btn-xs ' + addFlag + '" href="javascript:void(0)" onclick="signinRecord(\'' + row.signinId + '\')"><i class="fa fa-edit"></i> 签 到 </a> ');
+                            }
+
+                            actions.push('<a class="btn btn-success btn-xs ' + editFlag + '" href="javascript:void(0)" onclick="$.operate.edit(\'' + row.signinId + '\')"><i class="fa fa-edit"></i>编辑</a> ');
+                            actions.push('<a class="btn btn-danger btn-xs ' + removeFlag + '" href="javascript:void(0)" onclick="$.operate.remove(\'' + row.signinId + '\')"><i class="fa fa-remove"></i>删除</a>');
+                            return actions.join('');
+                        }
+                    }]
+            };
+            $.table.init(options);
+        }
+
+        function querySearchParam() {
+            //1.获取课程信息
+            $.ajax({
+                url:"/course/topic/courseDict",
+                type:"GET",
+                success:function (data){
+                    var htm = '<option value="" selected="selected">所有</option>';
+                    if(null == data.value){
+                        return;
+                    }
+                    for(var i=0;i<data.value.length;i++){
+                        var gr = data.value[i];
+                        htm += $.common.sprintf('<option value="%s" >%s</option>', gr.courseId, gr.courseName);
+                    }
+                    $("#courseId").html(htm);
+                }
+            });
+        }
+
+        function  initSignin() {
+            //请求签到列表
+            querySigninList();
+            //请求课程信息
+            querySearchParam();
+
+            //1.初始化日期控件
+            <!-- laydate示例 -->
+            layui.use('laydate', function() {
+                var laydate = layui.laydate;
+
+                var startDate = laydate.render({
+                    elem: '#startTimes',
+                    type: 'datetime',
+                    max: $('#endTimes').val(),
+                    theme: 'molv',
+                    trigger: 'click',
+                    done: function(value, date) {
+                        // 结束时间大于开始时间
+                        if (value !== '') {
+                            endDate.config.min.year = date.year;
+                            endDate.config.min.month = date.month - 1;
+                            endDate.config.min.date = date.date;
+                            endDate.config.min.hours = date.hours;
+                            endDate.config.min.minutes = date.minutes;
+                            endDate.config.min.seconds =date.seconds;
+                        } else {
+                            endDate.config.min.year = '';
+                            endDate.config.min.month = '';
+                            endDate.config.min.date = '';
+                            endDate.config.min.hours = '';
+                            endDate.config.min.minutes = '';
+                            endDate.config.min.seconds = '';
+                        }
+                    }
+                });
+
+                var endDate = laydate.render({
+                    elem: '#endTimes',
+                    min: $('#startTimes').val(),
+                    type: 'datetime',
+                    theme: 'molv',
+                    trigger: 'click',
+                    done: function(value, date) {
+                        // 开始时间小于结束时间
+                        if (value !== '') {
+                            startDate.config.max.year = date.year;
+                            startDate.config.max.month = date.month - 1;
+                            startDate.config.max.date = date.date+1;
+
+                            startDate.config.max.hours = date.hours;
+                            startDate.config.max.minutes = date.minutes;
+                            startDate.config.max.seconds = date.seconds;
+                        } else {
+                            startDate.config.max.year = '';
+                            startDate.config.max.month = '';
+                            startDate.config.max.date = '';
+
+                            startDate.config.max.hours = '';
+                            startDate.config.max.minutes = '';
+                            startDate.config.max.seconds = '';
+                        }
+                    }
+                });
+            });
+        }
+        $(function() {
+            initSignin();
+        });
+    </script>
+</body>
+</html>

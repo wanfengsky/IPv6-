@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yi.project.course.chapter.mapper.CourseChapterMapper">
+    
+    <resultMap type="CourseChapter" id="CourseChapterResult">
+        <result property="chapterId"    column="chapter_id"    />
+        <result property="chapterName"    column="chapter_name"    />
+        <result property="chapterInfo"    column="chapter_info"    />
+        <result property="courseId"    column="course_id"    />
+        <result property="publish"    column="publish"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="delFlag"    column="del_flag"    />
+    </resultMap>
+
+    <sql id="selectCourseChapterVo">
+        select chapter_id, chapter_name, chapter_info, course_id, publish, create_by, create_time, del_flag from sku_course_chapter
+    </sql>
+
+    <select id="selectCourseChapterList" parameterType="CourseChapter" resultMap="CourseChapterResult">
+        <include refid="selectCourseChapterVo"/>
+        <where>  
+            <if test="chapterId != null "> and chapter_id = #{chapterId}</if>
+            <if test="chapterName != null  and chapterName != ''"> and chapter_name like concat('%', #{chapterName}, '%')</if>
+            <if test="chapterInfo != null  and chapterInfo != ''"> and chapter_info = #{chapterInfo}</if>
+            <if test="courseId != null "> and course_id = #{courseId}</if>
+            <if test="publish != null  and publish != ''"> and publish = #{publish}</if>
+            <if test="delFlag != null  and delFlag != ''"> and del_flag = #{delFlag}</if>
+            <if test="createTime != null "> and create_time = #{createTime}</if>
+        </where>
+    </select>
+    
+    <select id="selectCourseChapterById" parameterType="Long" resultMap="CourseChapterResult">
+        <include refid="selectCourseChapterVo"/>
+        where chapter_id = #{chapterId}
+    </select>
+        
+    <insert id="insertCourseChapter" parameterType="CourseChapter" useGeneratedKeys="true" keyProperty="chapterId" keyColumn="chapter_id">
+
+        insert into sku_course_chapter
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="chapterName != null and chapterName != ''">chapter_name,</if>
+            <if test="chapterInfo != null and chapterInfo != ''">chapter_info,</if>
+            <if test="courseId != null">course_id,</if>
+            <if test="publish != null and publish != ''">publish,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="delFlag != null and delFlag != ''">del_flag,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="chapterName != null and chapterName != ''">#{chapterName},</if>
+            <if test="chapterInfo != null and chapterInfo != ''">#{chapterInfo},</if>
+            <if test="courseId != null">#{courseId},</if>
+            <if test="publish != null and publish != ''">#{publish},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="delFlag != null and delFlag != ''">#{delFlag},</if>
+         </trim>
+    </insert>
+
+    <update id="updateCourseChapter" parameterType="CourseChapter">
+        update sku_course_chapter
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="chapterName != null and chapterName != ''">chapter_name = #{chapterName},</if>
+            <if test="chapterInfo != null and chapterInfo != ''">chapter_info = #{chapterInfo},</if>
+            <if test="courseId != null">course_id = #{courseId},</if>
+            <if test="publish != null and publish != ''">publish = #{publish},</if>
+            <if test="createBy != null">create_by = #{createBy},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="delFlag != null and delFlag != ''">del_flag = #{delFlag},</if>
+        </trim>
+        where chapter_id = #{chapterId}
+    </update>
+
+    <delete id="deleteCourseChapterById" parameterType="long">
+        delete from sku_course_chapter where chapter_id = #{chapterId}
+    </delete>
+
+    <delete id="deleteCourseChapterByIds" parameterType="long">
+        delete from sku_course_chapter where chapter_id in 
+        <foreach item="chapterId" collection="array" open="(" separator="," close=")">
+            #{chapterId}
+        </foreach>
+    </delete>
+
+    <update id="deleteFlagByIds" parameterType="long">
+        update sku_course_chapter
+            SET del_flag = '2'
+        where chapter_id  in
+        <foreach item="chapterId" collection="array" open="(" separator="," close=")">
+            #{chapterId}
+        </foreach>
+    </update>
+
+</mapper>

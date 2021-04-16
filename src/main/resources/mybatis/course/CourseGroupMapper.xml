@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yi.project.course.group.mapper.CourseGroupMapper">
+    
+    <resultMap type="CourseGroup" id="CourseGroupResult">
+        <result property="groupId"    column="group_id"    />
+        <result property="groupName"    column="group_name"    />
+        <result property="courseId"    column="course_id"    />
+        <result property="startTime"    column="start_time"    />
+        <result property="endTime"    column="end_time"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="delFlag"    column="del_flag"    />
+        <association property="userCnt" column="group_id" select="com.yi.project.course.group.mapper.GroupUserMapper.countUsersByGroupId"/>
+    </resultMap>
+
+    <sql id="selectCourseGroupVo">
+        SELECT group_id, group_name, course_id, start_time, end_time, create_by, create_time, del_flag
+        FROM sku_course_group
+    </sql>
+
+    <select id="selectCourseGroupList" parameterType="CourseGroup" resultMap="CourseGroupResult">
+        <include refid="selectCourseGroupVo"/>
+        <where>
+            <if test="studentId != null">
+                AND group_id IN (
+                    SELECT group_id FROM sku_group_user WHERE user_id = #{studentId}
+                )
+            </if>
+            <if test="groupName != null  and groupName != ''"> and group_name like concat('%', #{groupName}, '%')</if>
+            <if test="courseId != null "> and course_id = #{courseId}</if>
+            <if test="createBy != null "> and create_by = #{createBy}</if>
+            <if test="params.validTime != null and params.validTime != ''"> AND start_time &lt;= #{params.validTime} AND end_time &gt;= #{params.validTime}</if>
+            <if test="params.beginCreateTime != null and params.beginCreateTime != '' and params.endCreateTime != null and params.endCreateTime != ''"> AND DATE(create_time) &gt;= #{params.beginCreateTime} AND DATE(create_time) &lt;= #{params.endCreateTime}</if>
+        </where>
+    </select>
+
+    <select id="selectGroupsForHomework" resultMap="CourseGroupResult" parameterType="HomeworkGroupQuery">
+        SELECT g.group_id, g.group_name, g.course_id, g.start_time, g.end_time, g.create_by, g.create_time, g.del_flag
+        FROM sku_course_group g
+        <if test="homeworkId != null">
+            INNER JOIN (
+                SELECT group_id FROM sku_homework_allocat WHERE homework_id = #{homeworkId}
+            ) ha ON ha.group_id = g.group_id
+        </if>
+        <if test="userId != null">
+            INNER JOIN (
+            SELECT group_id FROM sku_group_user WHERE user_id = #{userId}
+            ) gu ON gu.group_id = g.group_id
+        </if>
+        <where>
+            <if test="groupId != null"> AND g.group_id = #{groupId}</if>
+            <if test="valid == true and params.validTime != null and params.validTime != ''"> AND g.start_time &lt;= #{params.validTime} AND g.end_time &gt;= #{params.validTime}</if>
+        </where>
+    </select>
+    
+    <select id="selectCourseGroupById" parameterType="Long" resultMap="CourseGroupResult">
+        <include refid="selectCourseGroupVo"/>
+        where group_id = #{groupId}
+    </select>
+        
+    <insert id="insertCourseGroup" parameterType="CourseGroup" useGeneratedKeys="true" keyProperty="groupId">
+        insert into sku_course_group
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="groupName != null and groupName != ''">group_name,</if>
+            <if test="courseId != null">course_id,</if>
+            <if test="startTime != null">start_time,</if>
+            <if test="endTime != null">end_time,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="groupName != null and groupName != ''">#{groupName},</if>
+            <if test="courseId != null">#{courseId},</if>
+            <if test="startTime != null">#{startTime},</if>
+            <if test="endTime != null">#{endTime},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+         </trim>
+    </insert>
+
+    <update id="updateCourseGroup" parameterType="CourseGroup">
+        update sku_course_group
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="groupName != null and groupName != ''">group_name = #{groupName},</if>
+            <if test="courseId != null">course_id = #{courseId},</if>
+            <if test="startTime != null">start_time = #{startTime},</if>
+            <if test="endTime != null">end_time = #{endTime},</if>
+            <if test="createBy != null">create_by = #{createBy},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="delFlag != null">del_flag = #{delFlag},</if>
+        </trim>
+        where group_id = #{groupId}
+    </update>
+
+    <delete id="deleteCourseGroupById" parameterType="long">
+        delete from sku_course_group where group_id = #{groupId}
+    </delete>
+
+    <delete id="deleteCourseGroupByIds" parameterType="long">
+        delete from sku_course_group where group_id in 
+        <foreach item="groupId" collection="array" open="(" separator="," close=")">
+            #{groupId}
+        </foreach>
+    </delete>
+
+    <select id="getCouserIdsByGroupIds" parameterType="java.util.ArrayList" resultType="java.lang.Long">
+        select distinct  course_id
+        from sku_course_group
+        where del_flag = '0' and group_id in
+        <foreach item="groupId" collection="list" open="(" separator="," close=")">
+            #{groupId}
+        </foreach>
+    </select>
+
+</mapper>

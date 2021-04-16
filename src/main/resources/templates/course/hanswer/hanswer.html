@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="zh" xmlns:th="http://www.thymeleaf.org" xmlns:shiro="http://www.pollix.at/thymeleaf/shiro">
+<head>
+    <th:block th:include="include :: header('作业提交列表')" />
+</head>
+<body class="gray-bg">
+     <div class="container-div">
+        <div class="row">
+            <div class="col-sm-12 search-collapse">
+                <form id="formId">
+                    <div class="select-list">
+                        <ul>
+                            <li>
+                                <label>答案编号：</label>
+                                <input type="text" name="answerId"/>
+                            </li>
+                            <li>
+                                <label>作业编号：</label>
+                                <input type="text" name="homeworkId"/>
+                            </li>
+                            <li>
+                                <label>课程：</label>
+                                <input type="hidden" name="chapterId" id="chapterId" th:value="${chapterId}"/>
+                                <select id="courseIdSearch" name="courseId" th:with="type=${@course.courseDict()}">
+                                    <option value="">所有</option>
+                                    <option th:each="c : ${type}" th:selected="${courseId} == ${c.courseId}" th:text="${c.courseName}" th:value="${c.courseId}"></option>
+                                </select>
+                            </li>
+                            <li class="select-time">
+                                <label>提交时间：</label>
+                                <input type="text" id="beginSubmitTime" placeholder="开始时间" name="params[beginSubmitTime]"/>
+                                <input type="text" id="endSubmitTime" placeholder="结束时间" name="params[endSubmitTime]"/>
+                            </li>
+                            <li>
+                                <label>是否优秀：</label>
+                                <select name="excellent" th:with="type=${@dict.getType('sys_yes_no')}">
+                                    <option value="">所有</option>
+                                    <option th:each="dict : ${type}" th:text="${dict.dictLabel}" th:value="${dict.dictValue}"></option>
+                                </select>
+                            </li>
+                            <li>
+                                <a class="btn btn-primary btn-rounded btn-sm" onclick="$.table.search()"><i class="fa fa-search"></i>&nbsp;搜索</a>
+                                <a class="btn btn-warning btn-rounded btn-sm" onclick="$.form.reset()"><i class="fa fa-refresh"></i>&nbsp;重置</a>
+                            </li>
+                        </ul>
+                    </div>
+                </form>
+            </div>
+
+            <div class="btn-group-sm" id="toolbar" role="group">
+                <a class="btn btn-warning" onclick="$.table.exportExcel()" shiro:hasPermission="course:hanswer:export">
+                    <i class="fa fa-download"></i> 导出
+                </a>
+            </div>
+            <div class="col-sm-12 select-table table-striped">
+                <table id="bootstrap-table"></table>
+            </div>
+        </div>
+    </div>
+    <th:block th:include="include :: footer" />
+    <script th:inline="javascript">
+        var addFlag = [[${@permission.hasPermi('course:hanswer:add')}]];
+        var viewFlag = [[${@permission.hasPermi('course:hanswer:view')}]];
+        var yesNo = [[${@dict.getType('sys_yes_no')}]];
+        var prefix = "/course/homework";
+
+        $(function() {
+            var listUrl = prefix + "/listForMe";
+            var courseId = [[${courseId}]];
+            var chapterId = [[${chapterId}]];
+            //1.初始化搜索框
+            if(courseId != null){
+                listUrl += "?courseId="+courseId;
+                $("#courseIdSearch").hide();
+                if(chapterId != null){
+                    listUrl += "&chapterId="+chapterId;
+                }
+            }
+            var options = {
+                url: listUrl,
+                modalName: "待完成作业",
+                columns: [
+                {field: 'allocatId', title: '分配编号', visible: false},
+                {field: 'groupId', title: '班级编号', visible: false},
+                {field: 'chapterId', title: '章节编号', visible: false},
+                {field: 'courseId', title: '课程编号', visible: false},
+                {field: 'answerId', title: '答案编号'},
+                {field: 'homeworkId', title: '作业编号'},
+                {field: 'homeworkName', title: '作业名'},
+                {field: 'courseName', title: '课程'},
+                {field: 'chapterName', title: '章节'},
+                {field: 'groupName', title: '班级'},
+                {field: 'receiveCount', title: '完成/总数', formatter: function(value, row, index) {
+                    return (row.summitCount ? row.summitCount : 0) + '/' + value;
+                }},
+                {field: 'isOver', title: '是否完成',formatter: function(value, row, index) {
+                       return $.table.selectDictLabel(yesNo, value);
+                    }
+                },
+                {field: 'score', title: '分数'},
+                {field: 'excellent', title: '优秀',formatter: function(value, row, index) {
+                       return $.table.selectDictLabel(yesNo, value);
+                    }
+                },
+                {field: 'createBy', title: '创建者'},
+                {field: 'submitTime', title: '提交时间'},
+                {field: 'deadline', title: '截止时间'},
+                {
+                    title: '操作',
+                    align: 'center',
+                    formatter: function(value, row, index) {
+                        var actions = [];
+                        if(row.isOver && row.isOver == 'Y') {
+                            actions.push('<a class="btn btn-info btn-xs '+viewFlag+'" href="javascript:void(0)" onclick="showInfos('+index+')"><i class="fa fa-chevron-circle-right"></i>查看</a> ');
+                        } else {
+                            // 截止时间的拦截
+                            if(row.deadline && new Date(row.deadline) < new Date()){
+                                return "<font color='gray'>已超期</font>";
+                            }
+                            actions.push('<a class="btn btn-primary btn-xs '+addFlag+'" href="javascript:void(0)" onclick="toCommit('+index+')"><i class="fa fa-check"></i>提交</a> ');
+                        }
+                        return actions.join('');
+                    }
+                }]
+            };
+            $.table.init(options);
+        });
+        // 展示作业提交框
+        function toCommit(index){
+            var row = $("#bootstrap-table").bootstrapTable('getData')[index];
+            var url = prefix + '/toAnswer?homeworkId=' + row.homeworkId + '&groupId=' + row.groupId;
+            $.modal.open("提交作业", url);
+        }
+        // 展示作业查看弹窗
+        function showInfos(index) {
+            var row = $("#bootstrap-table").bootstrapTable('getData')[index];
+            var url = prefix + '/toAnswer?homeworkId=' + row.homeworkId + '&groupId=' + row.groupId + '&answerId=' + row.answerId;
+            $.modal.open("作业查看", url);
+        }
+
+        layui.use('laydate', function(){
+          var laydate = layui.laydate;
+            var startDate = laydate.render({
+                elem: '#beginSubmitTime',
+                max: $('#endSubmitTime').val(),
+                theme: 'molv',
+                trigger: 'click',
+                done: function(value, date) {
+                    // 结束时间大于开始时间
+                    if (value !== '') {
+                        endDate.config.min.year = date.year;
+                        endDate.config.min.month = date.month - 1;
+                        endDate.config.min.date = date.date;
+                    } else {
+                        endDate.config.min.year = '';
+                        endDate.config.min.month = '';
+                        endDate.config.min.date = '';
+                    }
+                }
+            });
+            var endDate = laydate.render({
+                elem: '#endSubmitTime',
+                min: $('#beginSubmitTime').val(),
+                theme: 'molv',
+                trigger: 'click',
+                done: function(value, date) {
+                    // 开始时间小于结束时间
+                    if (value !== '') {
+                        startDate.config.max.year = date.year;
+                        startDate.config.max.month = date.month - 1;
+                        startDate.config.max.date = date.date;
+                    } else {
+                        startDate.config.max.year = '';
+                        startDate.config.max.month = '';
+                        startDate.config.max.date = '';
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>
